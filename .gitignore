@@ -1,3 +1,5 @@
 *.tmp
 *.log
 /static/
+*.jpg
+*.png
