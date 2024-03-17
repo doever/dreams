@@ -1,23 +1,3 @@
-管理员运行命令：
-
-reg.exe add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve 
-
-
-
-不需要重启电脑，重启资源管理器即可，用命令：
-
-taskkill /f /im explorer.exe & start explorer.exe
-
-taskkill /f /im explorer.exe ; start explorer.exe
-
-
-
-这个是恢复win11右键
-
-reg.exe delete "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /va /f
-
-
-
 Win+Z ：打开窗口布局
 
 Win+N ：打开通知中心/四指轻触
@@ -48,28 +28,35 @@ Win+B快速跳转系统托盘
 
 Win+B是系统托盘的快捷键。按下时，焦点会移到托盘上，点击回车后可以直接看到托盘图标
 
-Win+C开放微软团队
+Win+C 开放微软团队 ，微软团队也是Windows 11中新增的一个组件。
 
-微软团队也是Windows 11中新增的一个组件。在发布会上，微软用它来演示[即时通讯](https://so.csdn.net/so/search?q=即时通讯&spm=1001.2101.3001.7020)。Win+C是这个组件的快捷键。无论是否显示在任务栏上，都可以一键调用微软团队。
+Win+空格 切换输入法，在装有多款输入法的系统之中，Win+空格可以快速完成输入法切换
 
-Win+空格 切换输入法
-
-在装有多款输入法的系统之中，Win+空格可以快速完成输入法切换
-
-Win+光标键 窗口排版
-
-除了新增加的布局面板，Windows 11还提供了另一种窗口排列方式，这就是——Win+光标键。目前借助Win键+→/↑/←/↓，可以实现左/右/左上/左下/右上/右下/全屏/最小化/上半屏九种组合，能够更快速地完成窗口布局。
-快速点击上下左右键还是有点魔性的哈哈哈。
-
-
+Win+光标键 窗口排版，借助Win键+→/↑/←/↓，可以实现左/右/左上/左下/右上/右下/全屏/最小化/上半屏九种组合
 
 Win + 小数字， 窗口切换
 
+Win+Home 最小化非活动窗口，打开窗口过多，会严重影响前端的工作效率，这时Win+Home就能派上用场了。
 
 
- **Win+Home 最小化非活动窗口**
 
-打开窗口过多，会严重影响前端的工作效率，这时Win+Home就能派上用场了。Win+Home是非活动窗口最小化键，类似于鼠标里的“窗口摇动”
+### win11右键菜单样式改变
+
+管理员运行命令：
+
+reg.exe add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve 
+
+不需要重启电脑，重启资源管理器即可，用命令：
+
+taskkill /f /im explorer.exe ; start explorer.exe
+
+这个是恢复win11右键
+
+reg.exe delete "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /va /f
+
+
+
+
 
 
 
