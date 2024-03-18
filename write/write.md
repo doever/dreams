@@ -54,7 +54,7 @@
 
 
 
-也许追逐答案的过程就是答案本身。
+Maybe the chase for the answer is the answer itself.
 
 
 
