@@ -40,6 +40,26 @@ Win+Home 最小化非活动窗口，打开窗口过多，会严重影响前端�
 
 
 
+
+
+切换无线网
+
+netsh wlan show networks
+
+连接无线网
+
+netsh wlan connect name=iBOSHKFCS
+
+netsh wlan connect name=cl
+
+断开连接
+
+netsh wlan disconnect  [[interface=]<string>]
+
+
+
+
+
 ### win11右键菜单样式改变
 
 管理员运行命令：
