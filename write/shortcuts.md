@@ -58,6 +58,12 @@ netsh wlan disconnect  [[interface=]<string>]
 
 
 
+1.检测网络状态，是否联网
+
+2.如果没有联网，判断是否是工作日，如果是工作日，切换工作室的wifi： cl，否则切换：xiaomixxx
+
+3
+
 
 
 ### win11右键菜单样式改变
