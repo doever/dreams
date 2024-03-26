@@ -40,9 +40,11 @@ Win+Home 最小化非活动窗口，打开窗口过多，会严重影响前端�
 
 
 
+刷新无线网
 
+netsh wlan refresh
 
-切换无线网
+显示无线网
 
 netsh wlan show networks
 
