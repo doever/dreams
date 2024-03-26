@@ -64,7 +64,7 @@ netsh wlan disconnect  [[interface=]<string>]
 
 2.如果没有联网，判断是否是工作日，如果是工作日，切换工作室的wifi： cl，否则切换：xiaomixxx
 
-3
+3.先断开网络在连接网络
 
 
 
