@@ -40,7 +40,7 @@ Win+Home 最小化非活动窗口，打开窗口过多，会严重影响前端�
 
 
 
-刷新无线网
+刷新无线网（不可用）
 
 netsh wlan refresh
 
@@ -59,12 +59,6 @@ netsh wlan connect name=cl
 netsh wlan disconnect  [[interface=]<string>]
 
 
-
-1.检测网络状态，是否联网
-
-2.如果没有联网，判断是否是工作日，如果是工作日，切换工作室的wifi： cl，否则切换：xiaomixxx
-
-3.先断开网络在连接网络
 
 
 

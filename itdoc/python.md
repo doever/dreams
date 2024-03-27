@@ -25,7 +25,7 @@ print(my_list[2])  # 输出: 3
 
 示例2，如何使用魔术方法实现一个可切片对象：
 
-```
+```python
 class MyGroup:
     def __init__(self, company_name, group_name, staffs):
         self.company_name = company_name
