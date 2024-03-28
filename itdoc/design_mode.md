@@ -1772,7 +1772,7 @@ print(staff2.info)
 
 ### 示例代码：
 
-```
+```python
 # 策略接口
 class PaymentStrategy:
     def pay(self, amount):

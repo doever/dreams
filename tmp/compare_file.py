@@ -14,7 +14,17 @@ emp表结构：emp_id int, emp_name varchar2(100), entry_date date, bonus number
 00004@!@nano@!@2018-04-01@!@1000.00@!@uuu
 使用python实现，不要使用第三方库
 """
+import sys
 import hashlib
+import subprocess
+from datetime import datetime
+
+
+def count_lines(filename):
+    result = subprocess.run(['wc', '-l', filename], capture_output=True, text=True)
+    output = result.stdout.strip()
+    line_count = int(output.split()[0])
+    return line_count
 
 
 def compare_files2(file_a, file_b, log_file):
@@ -66,7 +76,7 @@ def file_hash_and_lines(file_path):
 
 
 def compare_unsort_large_files(file_a, file_b, log_file):
-    """对比无序大文本，"""
+    """对比无序大文本，内存可能会占用较大"""
     # Calculate hashes and lines for each file
     hash_dict_a = file_hash_and_lines(file_a)
     hash_dict_b = file_hash_and_lines(file_b)
@@ -76,15 +86,28 @@ def compare_unsort_large_files(file_a, file_b, log_file):
 
     # Write the differences to the log file
     with open(log_file, 'w') as log:
+        log.write(f"{str(datetime.now())}: the result of {file_a} minus {file_b}.")
         for hash_val, (line_num, line_data) in diff_dict.items():
             # log.write(f'Line {line_num} in {file_a}: {line_data} is missing from {file_b}\n')
-            log.write(f'Line {line_num}\n')
+            log.write(f'line {line_num}\n')
+
+
+def main():
+    if len(sys.argv) != 2:
+        raise ValueError("Parameter error,Usage: python compare_file.py <file_a_path> <file_b_path>")
+
+    file_a = sys.argv[1]
+    file_b = sys.argv[2]
+    log_file_path = file_a + "_mismatch.log"
+
+    if count_lines(file_a) != count_lines(file_b):
+        pass
+    else:
+        pass
+
+    compare_unsort_large_files(file_a, file_b, log_file_path)
 
 
 if __name__ == "__main__":
-    file_a_path = "file_a.txt"
-    file_b_path = "file_b.txt"
-    log_file_path = "mismatch_log.txt"
-
-    compare_files7(file_a_path, file_b_path, log_file_path)
+    main()
 
