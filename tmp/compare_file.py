@@ -1,3 +1,4 @@
+# encoding=utf-8
 """
 两个使用不同程序分别从oracle的emp表导出的分隔符分割的txt格式文本文件，
 需要对比文件是否完全一致，将不一致的行记录到log日志里面
@@ -12,16 +13,20 @@ emp表结构：emp_id int, emp_name varchar2(100), entry_date date, bonus number
 00001@!@kimi@!@2021-01-01@!@2000.00@!@uuu
 00002@!@diaz@!@1988-01-01@!@0.00@!@uuu
 00004@!@nano@!@2018-04-01@!@1000.00@!@uuu
-使用python实现，不要使用第三方库
 """
+import os
+import re
 import sys
 import hashlib
 import subprocess
+import itertools
 from datetime import datetime
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 
 
-class FileCompare(ABC):
+class FileCompare:
+    __metaclass__ = ABCMeta
+
     def __init__(self, file_a, file_b):
         self.file_a = file_a
         self.file_b = file_b
@@ -32,8 +37,24 @@ class FileCompare(ABC):
         pass
 
 
-class SmallSortFileCompare(FileCompare):
-    """对比小文件，使用集合加减的方法对比，内存可能溢出"""
+class SortSmallFileCompare(FileCompare):
+    """有序小文件对比，逐行对比"""
+    def compare(self):
+        with open(self.file_a, 'r') as f_a, open(self.file_b, 'r') as f_b, open(self.log_file, 'w') as log:
+            line_number = 0
+            log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), self.file_a, self.file_b))
+            while True:
+                line_a = f_a.readline()
+                line_b = f_b.readline()
+                if not line_a and not line_b:
+                    break
+                line_number += 1
+                if line_a != line_b:
+                    log.write("Line {}:\n{} \n{}".format(line_number, line_a.strip(), line_b.strip()))
+
+
+class UnSortSmallFileCompare(FileCompare):
+    """对比小文件，使用集合加减的方法对比"""
     def compare(self):
         with open(self.file_a, 'r') as f_a, open(self.file_b, 'r') as f_b, open(self.log_file, 'w') as log:
             lines_a = set(f_a.readlines())
@@ -43,36 +64,15 @@ class SmallSortFileCompare(FileCompare):
             print(common_lines)
             unique_lines_a = lines_a - common_lines
             print(unique_lines_a)
-            unique_lines_b = lines_b - common_lines
 
             if unique_lines_a:
-                log.write("Lines present in {} but not in {}: \n".format(self.file_a, self.file_b))
+                log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), self.file_a, self.file_b))
                 for line in unique_lines_a:
                     log.write(line)
 
-            if unique_lines_b:
-                log.write("Lines present in {} but not in {}: \n".format(self.file_b, self.file_a))
-                for line in unique_lines_b:
-                    log.write(line)
 
-
-class LargeUnSortFileCompare(FileCompare):
-    """对比无序大文本，内存可能会占用较大"""
-    def compare(self):
-        # Calculate hashes and lines for each file
-        hash_dict_a = self.file_hash_and_lines(self.file_a)
-        hash_dict_b = self.file_hash_and_lines(self.file_b)
-
-        # Find the differences between the two dictionaries
-        diff_dict = {hash_val: line_info for hash_val, line_info in hash_dict_a.items() if hash_val not in hash_dict_b}
-
-        # Write the differences to the log file
-        with open(self.log_file, 'w') as log:
-            log.write(f"{str(datetime.now())}: the result of {self.file_a} minus {self.file_b}.")
-            for hash_val, (line_num, line_data) in diff_dict.items():
-                # log.write(f'Line {line_num} in {file_a}: {line_data} is missing from {file_b}\n')
-                log.write(f'line {line_num}\n')
-
+class UnSortLargeFileAllCompare(FileCompare):
+    """全量对比无序大文本，内存可能会占用较大"""
     @staticmethod
     def file_hash_and_lines(file):
         hash_dict = {}
@@ -81,48 +81,99 @@ class LargeUnSortFileCompare(FileCompare):
                 # Calculate the hash of each line
                 line_hash = hashlib.md5(line.encode()).hexdigest()
                 # Store the hash value and line number in the dictionary
-                hash_dict[line_hash] = (i, line.strip())
+                hash_dict[line_hash] = i
         return hash_dict
+
+    def compare(self):
+        # Calculate hashes and lines for each file
+        print(self.file_a)
+        hash_dict_a = self.file_hash_and_lines(self.file_a)
+        hash_dict_b = self.file_hash_and_lines(self.file_b)
+
+        # Find the differences between the two dictionaries
+        diff_dict = {hash_val: line_info for hash_val, line_info in hash_dict_a.items() if hash_val not in hash_dict_b}
+
+        # Write the differences to the log file
+        with open(self.log_file, 'w') as log:
+            log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), self.file_a, self.file_b))
+            for hash_val, line_num in diff_dict.items():
+                # log.write(f'Line {line_num} in {file_a}: {line_data} is missing from {file_b}\n')
+                log.write("line {}\n".format(line_num))
+
+
+class UnSortLargeFileRandomCompare(UnSortLargeFileAllCompare):
+    """抽样对比无序大文本"""
+    def compare(self):
+        random_file_a = self.file_a+".random"
+        # Calculate hashes and lines for each file
+        with open(self.file_a, 'r') as f_in, open(random_file_a, 'w') as f_out:
+            f_out.writelines(itertools.islice(f_in, 100))
+        self.file_a = random_file_a
+        super(UnSortLargeFileRandomCompare, self).compare()
+
+
+class CompareFileStrategy:
+    def __init__(self):
+        self.compare_strategy = None
+
+    def set_compare_strategy(self, compare_strategy):
+        self.compare_strategy = compare_strategy
+
+    def compare(self):
+        self.compare_strategy.compare()
 
 
 def count_lines(filename):
+    """计算文件的行数"""
     result = subprocess.run(['wc', '-l', filename], capture_output=True, text=True)
     output = result.stdout.strip()
     line_count = int(output.split()[0])
     return line_count
 
 
-def compare_files2(file_a, file_b, log_file):
-    """逐行对比，需要文件排序，如果有错序会导致记录大量数据"""
-    with open(file_a, 'r') as f_a, open(file_b, 'r') as f_b, open(log_file, 'w') as log:
-        line_number = 0
-        while True:
-            line_a = f_a.readline()
-            line_b = f_b.readline()
-            if not line_a and not line_b:
-                break
-            line_number += 1
-            if line_a != line_b:
-                log.write(f'Line {line_number}: {line_a.strip()} != {line_b.strip()}\n')
+def clean_file(input_file):
+    """清理文件，替换文件的 00000.0000"""
+    output_file = input_file + ".clean"
+    with open(input_file, 'r') as f_in, open(output_file, 'w') as f_out:
+        for line in f_in:
+            new_line = re.sub(r'\s*0*\.0*', '0', line)
+            f_out.write(new_line)
+    return output_file
 
+
+def remove_tmp_file():
+    pass
 
 
 def main():
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         raise ValueError("Parameter error,Usage: python compare_file.py <file_a_path> <file_b_path>")
 
     file_a = sys.argv[1]
     file_b = sys.argv[2]
-    log_file_path = file_a + "_mismatch.log"
+    strict = False
 
-    if count_lines(file_a) != count_lines(file_b):
-        pass
+    # count_a = count_lines(file_a)
+    # count_b = count_lines(file_b)
+    count_a = 5
+    count_b = 5
+
+    if count_a != count_b:
+        with open(file_a + "_mismatch.txt", 'w') as f:
+            f.write("The number of lines in two files is not equal\n{}={}\n{}={}".format(file_a, count_a, file_b, count_b))
+        exit(-1)
+
+    clean_file_a = clean_file(file_a)
+    compare_strategy = CompareFileStrategy()
+    if count_a <= 50 * 10000:
+        compare_strategy.set_compare_strategy(UnSortSmallFileCompare(clean_file_a, file_b))
+    elif strict:
+        compare_strategy.set_compare_strategy(UnSortLargeFileAllCompare(clean_file_a, file_b))
     else:
-        pass
+        compare_strategy.set_compare_strategy(UnSortLargeFileRandomCompare(clean_file_a, file_b))
 
-    # compare_unsort_large_files(file_a, file_b, log_file_path)
+    compare_strategy.compare()
 
 
 if __name__ == "__main__":
     main()
-
