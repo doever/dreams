@@ -104,11 +104,11 @@ class UnSortLargeFileAllCompare(FileCompare):
 class UnSortLargeFileRandomCompare(UnSortLargeFileAllCompare):
     """抽样对比无序大文本"""
     def compare(self):
-        random_file_a = self.file_a+".random"
-        # Calculate hashes and lines for each file
-        with open(self.file_a, 'r') as f_in, open(random_file_a, 'w') as f_out:
-            f_out.writelines(itertools.islice(f_in, 100))
-        self.file_a = random_file_a
+        with open(self.file_a, 'r') as f_in:
+            rows = ''.join(itertools.islice(f_in, 100))
+        with open(self.file_a, 'w') as f_out:
+            f_out.write(rows)
+        # os.system("head - 100 {} > {} && mv {} {}".format(self.file_a, random_file_a, random_file_a, self.file_b))
         super(UnSortLargeFileRandomCompare, self).compare()
 
 
@@ -166,7 +166,8 @@ def main():
     clean_file_a = clean_file(file_a)
     compare_strategy = CompareFileStrategy()
     if count_a <= 50 * 10000:
-        compare_strategy.set_compare_strategy(UnSortSmallFileCompare(clean_file_a, file_b))
+        compare_strategy.set_compare_strategy(UnSortLargeFileRandomCompare(clean_file_a, file_b))
+        # compare_strategy.set_compare_strategy(UnSortSmallFileCompare(clean_file_a, file_b))
     elif strict:
         compare_strategy.set_compare_strategy(UnSortLargeFileAllCompare(clean_file_a, file_b))
     else:
