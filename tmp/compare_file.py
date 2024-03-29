@@ -18,6 +18,71 @@ import sys
 import hashlib
 import subprocess
 from datetime import datetime
+from abc import ABC, abstractmethod
+
+
+class FileCompare(ABC):
+    def __init__(self, file_a, file_b):
+        self.file_a = file_a
+        self.file_b = file_b
+        self.log_file = file_a + "_mismatch.log"
+
+    @abstractmethod
+    def compare(self):
+        pass
+
+
+class SmallSortFileCompare(FileCompare):
+    """对比小文件，使用集合加减的方法对比，内存可能溢出"""
+    def compare(self):
+        with open(self.file_a, 'r') as f_a, open(self.file_b, 'r') as f_b, open(self.log_file, 'w') as log:
+            lines_a = set(f_a.readlines())
+            lines_b = set(f_b.readlines())
+
+            common_lines = lines_a.intersection(lines_b)
+            print(common_lines)
+            unique_lines_a = lines_a - common_lines
+            print(unique_lines_a)
+            unique_lines_b = lines_b - common_lines
+
+            if unique_lines_a:
+                log.write("Lines present in {} but not in {}: \n".format(self.file_a, self.file_b))
+                for line in unique_lines_a:
+                    log.write(line)
+
+            if unique_lines_b:
+                log.write("Lines present in {} but not in {}: \n".format(self.file_b, self.file_a))
+                for line in unique_lines_b:
+                    log.write(line)
+
+
+class LargeUnSortFileCompare(FileCompare):
+    """对比无序大文本，内存可能会占用较大"""
+    def compare(self):
+        # Calculate hashes and lines for each file
+        hash_dict_a = self.file_hash_and_lines(self.file_a)
+        hash_dict_b = self.file_hash_and_lines(self.file_b)
+
+        # Find the differences between the two dictionaries
+        diff_dict = {hash_val: line_info for hash_val, line_info in hash_dict_a.items() if hash_val not in hash_dict_b}
+
+        # Write the differences to the log file
+        with open(self.log_file, 'w') as log:
+            log.write(f"{str(datetime.now())}: the result of {self.file_a} minus {self.file_b}.")
+            for hash_val, (line_num, line_data) in diff_dict.items():
+                # log.write(f'Line {line_num} in {file_a}: {line_data} is missing from {file_b}\n')
+                log.write(f'line {line_num}\n')
+
+    @staticmethod
+    def file_hash_and_lines(file):
+        hash_dict = {}
+        with open(file, 'r') as file:
+            for i, line in enumerate(file, start=1):
+                # Calculate the hash of each line
+                line_hash = hashlib.md5(line.encode()).hexdigest()
+                # Store the hash value and line number in the dictionary
+                hash_dict[line_hash] = (i, line.strip())
+        return hash_dict
 
 
 def count_lines(filename):
@@ -41,56 +106,6 @@ def compare_files2(file_a, file_b, log_file):
                 log.write(f'Line {line_number}: {line_a.strip()} != {line_b.strip()}\n')
 
 
-def compare_small_files(file_a, file_b, log_file):
-    """可以比对小文件，使用集合的方法做值对比，内存可能溢出"""
-    with open(file_a, 'r') as f_a, open(file_b, 'r') as f_b, open(log_file, 'w') as log:
-        lines_a = set(f_a.readlines())
-        lines_b = set(f_b.readlines())
-
-        common_lines = lines_a.intersection(lines_b)
-        print(common_lines)
-        unique_lines_a = lines_a - common_lines
-        print(unique_lines_a)
-        unique_lines_b = lines_b - common_lines
-
-        if unique_lines_a:
-            log.write("Lines present in {} but not in {}: \n".format(file_a, file_b))
-            for line in unique_lines_a:
-                log.write(line)
-
-        if unique_lines_b:
-            log.write("Lines present in {} but not in {}: \n".format(file_b, file_a))
-            for line in unique_lines_b:
-                log.write(line)
-
-
-def file_hash_and_lines(file_path):
-    hash_dict = {}
-    with open(file_path, 'r') as file:
-        for i, line in enumerate(file, start=1):
-            # Calculate the hash of each line
-            line_hash = hashlib.md5(line.encode()).hexdigest()
-            # Store the hash value and line number in the dictionary
-            hash_dict[line_hash] = (i, line.strip())
-    return hash_dict
-
-
-def compare_unsort_large_files(file_a, file_b, log_file):
-    """对比无序大文本，内存可能会占用较大"""
-    # Calculate hashes and lines for each file
-    hash_dict_a = file_hash_and_lines(file_a)
-    hash_dict_b = file_hash_and_lines(file_b)
-
-    # Find the differences between the two dictionaries
-    diff_dict = {hash_val: line_info for hash_val, line_info in hash_dict_a.items() if hash_val not in hash_dict_b}
-
-    # Write the differences to the log file
-    with open(log_file, 'w') as log:
-        log.write(f"{str(datetime.now())}: the result of {file_a} minus {file_b}.")
-        for hash_val, (line_num, line_data) in diff_dict.items():
-            # log.write(f'Line {line_num} in {file_a}: {line_data} is missing from {file_b}\n')
-            log.write(f'line {line_num}\n')
-
 
 def main():
     if len(sys.argv) != 2:
@@ -105,7 +120,7 @@ def main():
     else:
         pass
 
-    compare_unsort_large_files(file_a, file_b, log_file_path)
+    # compare_unsort_large_files(file_a, file_b, log_file_path)
 
 
 if __name__ == "__main__":

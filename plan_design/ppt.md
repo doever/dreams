@@ -226,11 +226,11 @@ PPT插件：iSlide   piti
 
 - **对齐 （行间距1.5，字间距1.3）**
 
-![image-20240314172132349](D:\cl\dreams\static\image-20240314172132349.png)
+![image-20240314172132349](D:\cl\dreams\static\pic\image-20240314172132349.png)
 
 - **对比，突出文字，图形，降低文字阅读量，突出内容比例少，突出的视觉效果统一（放大，加粗）**
 
-![image-20240314172209343](D:\cl\dreams\static\image-20240314172209343.png)
+![image-20240314172209343](D:\cl\dreams\static\pic\image-20240314172209343.png)
 
 - **靠近**
 
@@ -265,25 +265,25 @@ PPT插件：iSlide   piti
 
 **居中**
 
-![image-20240314172250649](D:\cl\dreams\static\image-20240314172250649.png)
+![image-20240314172250649](D:\cl\dreams\static\pic\image-20240314172250649.png)
 
 **杂志**
 
-![image-20240314172305003](D:\cl\dreams\static\image-20240314172305003.png)
+![image-20240314172305003](D:\cl\dreams\static\pic\image-20240314172305003.png)
 
-![image-20240314172325030](D:\cl\dreams\static\image-20240314172325030.png)
+![image-20240314172325030](D:\cl\dreams\static\pic\image-20240314172325030.png)
 
-![image-20240314172339143](D:\cl\dreams\static\image-20240314172339143.png)
+![image-20240314172339143](D:\cl\dreams\static\pic\image-20240314172339143.png)
 
 **分割**
 
-![image-20240314172350901](D:\cl\dreams\static\image-20240314172350901.png)
+![image-20240314172350901](D:\cl\dreams\static\pic\image-20240314172350901.png)
 
 
 
 **分裂**
 
-![image-20240314172804980](D:\cl\dreams\static\image-20240314172804980.png)
+![image-20240314172804980](D:\cl\dreams\static\pic\image-20240314172804980.png)
 
 
 
@@ -291,7 +291,7 @@ PPT插件：iSlide   piti
 
 标题设计   文字与图形 Icon结合
 
-![image-20240314172901798](D:\cl\dreams\static\image-20240314172901798.png)
+![image-20240314172901798](D:\cl\dreams\static\pic\image-20240314172901798.png)
 
 **图片 （加入线框 阴影）**
 
@@ -334,7 +334,7 @@ PPT插件：iSlide   piti
 - 填充为渐变，颜色蓝色，插入几帧，颜色一样，透明度递增即可
 
 
-![image-20240314172707615](D:\cl\dreams\static\image-20240314172707615.png)
+![image-20240314172707615](D:\cl\dreams\static\pic\image-20240314172707615.png)
 
 ------
 
