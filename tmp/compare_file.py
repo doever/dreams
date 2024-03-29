@@ -136,7 +136,7 @@ def clean_file(input_file):
     output_file = input_file + ".clean"
     with open(input_file, 'r') as f_in, open(output_file, 'w') as f_out:
         for line in f_in:
-            new_line = re.sub(r'\s*0*\.0*', '0', line)
+            new_line = re.sub(r'(?<=@)\s*0*\.0*', '0', line)
             f_out.write(new_line)
     return output_file
 
