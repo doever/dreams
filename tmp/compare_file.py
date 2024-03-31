@@ -142,6 +142,7 @@ def clean_file(input_file):
 
 
 def remove_tmp_file():
+    """清理多余的文件"""
     pass
 
 
