@@ -323,7 +323,7 @@ p.pay(100)
 
 下面是一个简单的工厂方法模式的示例：
 
-```
+```python
 from abc import ABCMeta, abstractmethod
 
 
