@@ -27,22 +27,22 @@ from abc import ABCMeta, abstractmethod
 class FileCompare:
     __metaclass__ = ABCMeta
 
-    def __init__(self, file_a, file_b):
-        self.file_a = file_a
-        self.file_b = file_b
-        self.log_file = file_a + "_mismatch.log"
+    # def __init__(self, file_a, file_b):
+    #     self.file_a = file_a
+    #     self.file_b = file_b
+    #     self.log_file = file_a + "_mismatch.log"
 
     @abstractmethod
-    def compare(self):
+    def compare(self, file_a, file_b, log_file):
         pass
 
 
 class SortSmallFileCompare(FileCompare):
     """有序小文件对比，逐行对比"""
-    def compare(self):
-        with open(self.file_a, 'r') as f_a, open(self.file_b, 'r') as f_b, open(self.log_file, 'w') as log:
+    def compare(self, file_a, file_b, log_file="run_out.log"):
+        with open(file_a, 'r') as f_a, open(file_b, 'r') as f_b, open(log_file, 'w') as log:
             line_number = 0
-            log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), self.file_a, self.file_b))
+            log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), file_a, file_b))
             while True:
                 line_a = f_a.readline()
                 line_b = f_b.readline()
@@ -55,8 +55,8 @@ class SortSmallFileCompare(FileCompare):
 
 class UnSortSmallFileCompare(FileCompare):
     """对比小文件，使用集合加减的方法对比"""
-    def compare(self):
-        with open(self.file_a, 'r') as f_a, open(self.file_b, 'r') as f_b, open(self.log_file, 'w') as log:
+    def compare(self, file_a, file_b, log_file="run_out.log"):
+        with open(file_a, 'r') as f_a, open(file_b, 'r') as f_b, open(log_file, 'w') as log:
             lines_a = set(f_a.readlines())
             lines_b = set(f_b.readlines())
 
@@ -66,7 +66,7 @@ class UnSortSmallFileCompare(FileCompare):
             print(unique_lines_a)
 
             if unique_lines_a:
-                log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), self.file_a, self.file_b))
+                log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), file_a, file_b))
                 for line in unique_lines_a:
                     log.write(line)
 
@@ -84,18 +84,18 @@ class UnSortLargeFileAllCompare(FileCompare):
                 hash_dict[line_hash] = i
         return hash_dict
 
-    def compare(self):
+    def compare(self, file_a, file_b, log_file="run_out.log"):
         # Calculate hashes and lines for each file
-        print(self.file_a)
-        hash_dict_a = self.file_hash_and_lines(self.file_a)
-        hash_dict_b = self.file_hash_and_lines(self.file_b)
+        print(file_a)
+        hash_dict_a = self.file_hash_and_lines(file_a)
+        hash_dict_b = self.file_hash_and_lines(file_b)
 
         # Find the differences between the two dictionaries
         diff_dict = {hash_val: line_info for hash_val, line_info in hash_dict_a.items() if hash_val not in hash_dict_b}
 
         # Write the differences to the log file
-        with open(self.log_file, 'w') as log:
-            log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), self.file_a, self.file_b))
+        with open(log_file, 'w') as log:
+            log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), file_a, file_b))
             for hash_val, line_num in diff_dict.items():
                 # log.write(f'Line {line_num} in {file_a}: {line_data} is missing from {file_b}\n')
                 log.write("line {}\n".format(line_num))
@@ -103,24 +103,24 @@ class UnSortLargeFileAllCompare(FileCompare):
 
 class UnSortLargeFileRandomCompare(UnSortLargeFileAllCompare):
     """抽样对比无序大文本"""
-    def compare(self):
-        with open(self.file_a, 'r') as f_in:
+    def compare(self, file_a, file_b, log_file="run_out.log"):
+        with open(file_a, 'r') as f_in:
             rows = ''.join(itertools.islice(f_in, 100))
-        with open(self.file_a, 'w') as f_out:
+        with open(file_a, 'w') as f_out:
             f_out.write(rows)
-        # os.system("head - 100 {} > {} && mv {} {}".format(self.file_a, random_file_a, random_file_a, self.file_b))
-        super(UnSortLargeFileRandomCompare, self).compare()
+        # os.system("head - 100 {} > {} && mv {} {}".format(file_a, random_file_a, random_file_a, file_b))
+        super(UnSortLargeFileRandomCompare, self).compare(file_a, file_b, log_file)
 
 
-class CompareFileStrategy:
+class CompareContext:
     def __init__(self):
         self.compare_strategy = None
 
     def set_compare_strategy(self, compare_strategy):
         self.compare_strategy = compare_strategy
 
-    def compare(self):
-        self.compare_strategy.compare()
+    def compare(self, file_a, file_b, log_file="run_out"):
+        self.compare_strategy.compare(file_a, file_b, log_file)
 
 
 def count_lines(filename):
@@ -152,6 +152,7 @@ def main():
 
     file_a = sys.argv[1]
     file_b = sys.argv[2]
+    log_file = file_a + "_mismatch.log"
     strict = False
 
     # count_a = count_lines(file_a)
@@ -165,16 +166,15 @@ def main():
         exit(-1)
 
     clean_file_a = clean_file(file_a)
-    compare_strategy = CompareFileStrategy()
+    compare_context = CompareContext()
     if count_a <= 50 * 10000:
-        compare_strategy.set_compare_strategy(UnSortLargeFileRandomCompare(clean_file_a, file_b))
-        # compare_strategy.set_compare_strategy(UnSortSmallFileCompare(clean_file_a, file_b))
+        compare_context.set_compare_strategy(UnSortLargeFileRandomCompare())
     elif strict:
-        compare_strategy.set_compare_strategy(UnSortLargeFileAllCompare(clean_file_a, file_b))
+        compare_context.set_compare_strategy(UnSortLargeFileAllCompare())
     else:
-        compare_strategy.set_compare_strategy(UnSortLargeFileRandomCompare(clean_file_a, file_b))
+        compare_context.set_compare_strategy(UnSortLargeFileRandomCompare())
 
-    compare_strategy.compare()
+    compare_context.compare(clean_file_a, file_b, log_file)
 
 
 if __name__ == "__main__":
