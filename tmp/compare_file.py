@@ -11,7 +11,7 @@ emp表结构：emp_id int, emp_name varchar2(100), entry_date date, bonus number
 
 文本文件B示例
 00001@!@kimi@!@2021-01-01@!@2000.00@!@uuu
-00002@!@diaz@!@1988-01-01@!@0.00@!@uuu
+00002@!@diaz@!@1988-01-01@!@0@!@uuu
 00004@!@nano@!@2018-04-01@!@1000.00@!@uuu
 """
 import os
@@ -132,7 +132,7 @@ def count_lines(filename):
 
 
 def clean_file(input_file):
-    """清理文件，替换文件的 00000.0000"""
+    """清洗文件，替换文件的 00000.0000"""
     output_file = input_file + ".clean"
     with open(input_file, 'r') as f_in, open(output_file, 'w') as f_out:
         for line in f_in:
