@@ -1,3 +1,35 @@
+## 注释规范
+
+### python开头注释
+
+![image-20240407142148861](D:\cl\dreams\static\pic\image-20240407142148861.png)
+
+1. #!/usr/bin/env [python](https://so.csdn.net/so/search?q=python&spm=1001.2101.3001.7020) 与 #!/usr/bin/python 的区别
+
+**这些注释并不仅仅是写给读者看的注释，它也写给操作系统看的，这些注释决定了系统将如何运行这些文件。**
+
+linux自带python解释器。在编写.py文件时，只要写上了#!/usr/bin/python这行注释，用户就可以直接在命令行用文件名来执行py文件，例如：  testmode.py 
+
+它的意义就类似于在window命令行中，你必须得写 python testmode.py 或 javac testmode.java 或 java testmode.class 来运行文件，你要通过文件名前面的**关键字**才能去启动对应的解释器。而有了这行注释，Linux系统就知道了你要用什么来执行这个文件，你就可以直接用文件名去跑它了。
+
+\#!/usr/bin/python 注释的问题在于，Linux只系统默认的py解释器（也就是自带的那个）来运行文件。这样用户就无法使用自己的python版本了，不同的py版本之间语法有些差异，尤其是变动比较大的py2和py3，这些差异会使得整个程序无法正常运行。而#!/usr/bin/env python 的出现可则让用户可以自行选择python版本，用户可以在**环境变量**中配置自己的py解释器（ps：用户安装的版本默认定位在linux的local文件夹中）。#!/usr/bin/env python 这行注释，会使linux在解析文件时，知道要去使用环境变量中的py解释器而非系统自带的那个。
+
+所以如果你要使用该注释，推荐使用#!/usr/bin/env python 的注释，而非 #!/usr/bin/python。
+
+ 
+
+如果是在windows环境中执行文件的话，这行注释就无所谓了，因为你在cmd中，需要先定位到你py文件所在的文件夹后，再使用 python testmode.py 这样的语句来执行文件。window系统也不会去看这行注释.
+
+4.如何在pyCharm中设置文件默认的开头的注释格式。如下：
+
+　　1.view中勾选Toolbar 工具条,点击设置,也可使用ctrl+alt+S进入
+
+　　![img](https://images2017.cnblogs.com/blog/1218858/201712/1218858-20171221163201100-1151374521.png)![img](https://images2017.cnblogs.com/blog/1218858/201712/1218858-20171221163244990-95463182.png)
+
+　　2.选择editor下的file and code templates, 在右侧file中选择python script ,右侧输入注释
+
+
+
 ##  魔术方法
 
 在Python中，`__getitem__`是一个特殊方法，用于实现对象的索引访问。当你使用索引操作符`[]`来访问对象的元素时，解释器会调用该对象的`__getitem__`方法。这个方法接受一个参数，通常是索引，然后返回相应位置的值。
