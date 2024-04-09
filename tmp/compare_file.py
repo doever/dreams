@@ -1,19 +1,16 @@
-# encoding=utf-8
-"""
-两个使用不同程序分别从oracle的emp表导出的分隔符分割的txt格式文本文件，
-需要对比文件是否完全一致，将不一致的行记录到log日志里面
-emp表结构：emp_id int, emp_name varchar2(100), entry_date date, bonus number(15, 2), address text
-文本文件A示例
-00001@!@kimi@!@2021-01-01@!@2000.00@!@uuu
-00002@!@diaz@!@1988-01-01@!@00000000000000.00@!@uuu
-00003@!@phoebe@!@1958-01-01@!@3000.00@!@uuu
-00004@!@nano@!@2018-04-01@!@1000.00@!@uuu
+##############################################################################
+#                              compare_file.py                               #
+#                                                                            #
+# Description:                                                               #
+#     This script compares two files.                                        #
+#                                                                            #
+# Version    : v1.1                                                          #
+# Author     : cl                                                            #
+# CreateTime : 2024/03/29                                                    #
+# Copyright (c) 2024 by cl                                                   #
+##############################################################################
 
-文本文件B示例
-00001@!@kimi@!@2021-01-01@!@2000.00@!@uuu
-00002@!@diaz@!@1988-01-01@!@0@!@uuu
-00004@!@nano@!@2018-04-01@!@1000.00@!@uuu
-"""
+
 import os
 import re
 import sys
@@ -47,6 +44,9 @@ def clean_file(func):
 
 class FileCompare:
     __metaclass__ = ABCMeta
+
+    def __init__(self):
+        pass
 
     @abstractmethod
     def compare(self, file_a, file_b, log_file):
