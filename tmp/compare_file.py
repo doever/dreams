@@ -80,9 +80,7 @@ class UnSortSmallFileCompare(FileCompare):
             lines_b = set(f_b.readlines())
 
             common_lines = lines_a.intersection(lines_b)
-            print(common_lines)
             unique_lines_a = lines_a - common_lines
-            print(unique_lines_a)
 
             if unique_lines_a:
                 log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), file_a, file_b))
@@ -93,32 +91,42 @@ class UnSortSmallFileCompare(FileCompare):
 class UnSortLargeFileAllCompare(FileCompare):
     """全量对比无序大文本，内存可能会占用较大"""
     @staticmethod
-    def file_hash_and_lines(file):
+    def hash_file_lines_dict(file):
+        """计算文件的每一行hash，存储行号跟哈希值到字典中"""
         hash_dict = {}
         with open(file, 'r') as file:
             for i, line in enumerate(file, start=1):
-                # Calculate the hash of each line
                 line_hash = hashlib.md5(line.encode()).hexdigest()
                 # Store the hash value and line number in the dictionary
-                hash_dict[line_hash] = i
+                hash_dict[i] = line_hash
         return hash_dict
+
+    @staticmethod
+    def hash_file_lines_set(file):
+        """计算文件的每一行hash，存储哈希值到集合中"""
+        hash_set = set({})
+        with open(file, 'r') as file:
+            for i, line in enumerate(file, start=1):
+                line_hash = hashlib.md5(line.encode()).hexdigest()
+                # Store the hash value and line number in the set
+                hash_set.add(line_hash)
+        return hash_set
 
     @clean_file
     def compare(self, file_a, file_b, log_file):
-        # Calculate hashes and lines for each file
-        print(file_a)
-        hash_dict_a = self.file_hash_and_lines(file_a)
-        hash_dict_b = self.file_hash_and_lines(file_b)
+        # 计算文件的每一行hash值
+        hash_dict_a = self.hash_file_lines_dict(file_a)
+        hash_set_b = self.hash_file_lines_set(file_b)
 
-        # Find the differences between the two dictionaries
-        diff_dict = {hash_val: line_info for hash_val, line_info in hash_dict_a.items() if hash_val not in hash_dict_b}
-
-        # Write the differences to the log file
+        # 写入差异行号到log文件中
         with open(log_file, 'w') as log:
             log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), file_a, file_b))
-            for hash_val, line_num in diff_dict.items():
-                # log.write(f'Line {line_num} in {file_a}: {line_data} is missing from {file_b}\n')
-                log.write("line {}\n".format(line_num))
+            for line_num, hash_val in hash_dict_a.items():
+                if hash_val in hash_set_b:         # set判断元素在其中是O(1)复杂度，在这里使用if提前continue无法提升性能
+                    log.write("line {} in\n".format(line_num))
+                    continue
+                else:
+                    log.write("line {} out\n".format(line_num))
 
 
 class UnSortLargeFileRandomCompare(UnSortLargeFileAllCompare):
