@@ -21,32 +21,45 @@ from datetime import datetime
 from abc import ABCMeta, abstractmethod
 
 
-def clean_file(func):
-    """装饰器函数, 在比较前清洗文件，替换文件的金额类型"""
-    def wrapper(self, file_a, file_b, log_file):
-        # 对file_a开始清洗
-        # clean_file_a = file_a if file_a.endswith('clean') else file_a + ".clean"
-        clean_file_a = file_a + ".clean"
+def read_file_by_line(file_name):
+    """生成器函数, 惰性按行读取文件"""
+    with open(file_name, 'r') as file:
+        for line in file:
+            yield line
 
-        f_out = open(clean_file_a, 'w')
-        with open(file_a, 'r') as f_in:
-           for line in f_in:
-               # 1.替换 000.000格式数据为0                   " 00000000000000000000.000000"  ->   0
-               new_line = re.sub(r'(@) 0+(0)\.0+(?=\D|$)', r'\1\2', line)
-               # 2.替换正decimal整型前后的0以及删除小数点     " 00000000000000000100.000000"  ->   100
-               new_line = re.sub(r'(@) 0+([0-9]*)\.0+(?=\D|$)', r'\1\2', new_line)
-               # 3.替换负decimal整型前后的0以及删除小数点     "-00000000000000000100.000000"  ->   -100
-               new_line = re.sub(r'(@-)0+([0-9]*)\.0+(?=\D|$)', r'\1\2', new_line)
-               # 4.替换负decimal类型前后的0                  "-00000000000000000000.0002800" ->   -.00028
-               new_line = re.sub(r'(@-)0+([0-9]*\.)([0-9]*?)0*(?=\D|$)', r'\1\2\3', new_line)
-               # 5.替换正decimal类型前后的0，删除空格         " 00000000000000000000.0002800" ->   .00028
-               new_line = re.sub(r'(@) 0+([0-9]*\.)([0-9]*?)0*(?=\D|$)', r'\1\2\3', new_line)
-               # 6.替换正NULL类型中间的空格，删除空格         "@!@ @!@" ->   "@!@@!@"
-               new_line = re.sub(r'(@[!|\|]@) (?=\D|$)', r'\1', new_line)
-               f_out.write(new_line)
-        f_out.close()
-        return func(self, clean_file_a, file_b, log_file)
-    return wrapper
+
+def clean_file(rows):
+    """装饰器函数, 在比较前清洗文件，替换文件的金额类型,可以选择全部清洗或者前1000行"""
+    def decorator(func):
+        def wrapper(self, file_a, file_b, log_file):
+            # 选择要清洗的行数
+            if rows.lower() == "all":                 # 全部清洗
+                input_file = read_file_by_line(file_a)
+            elif rows.lower() == "top1000":           # 清洗文件前1000行
+                input_file = [ line for no, line in enumerate(read_file_by_line(file_a), start=0) if no<1000 ]
+            else:
+                raise ValueError("illegal parameter: %s" % str(rows))
+
+            # 写入到清洗后的文件
+            clean_file_a = file_a + ".clean"
+            with open(clean_file_a, 'w') as f_out:
+                for line in input_file:
+                    # 1.替换 000.000格式数据为0                   " 00000000000000000000.000000"  ->   0
+                    new_line = re.sub(r'(@) 0+(0)\.0+(?=\D|$)', r'\1\2', line)
+                    # 2.替换正decimal整型前后的0以及删除小数点     " 00000000000000000100.000000"  ->   100
+                    new_line = re.sub(r'(@) 0+([0-9]*)\.0+(?=\D|$)', r'\1\2', new_line)
+                    # 3.替换负decimal整型前后的0以及删除小数点     "-00000000000000000100.000000"  ->   -100
+                    new_line = re.sub(r'(@-)0+([0-9]*)\.0+(?=\D|$)', r'\1\2', new_line)
+                    # 4.替换负decimal类型前后的0                  "-00000000000000000000.0002800" ->   -.00028
+                    new_line = re.sub(r'(@-)0+([0-9]*\.)([0-9]*?)0*(?=\D|$)', r'\1\2\3', new_line)
+                    # 5.替换正decimal类型前后的0，删除空格         " 00000000000000000000.0002800" ->   .00028
+                    new_line = re.sub(r'(@) 0+([0-9]*\.)([0-9]*?)0*(?=\D|$)', r'\1\2\3', new_line)
+                    # 6.替换正NULL类型中间的空格，删除空格         "@!@ @!@" ->   "@!@@!@"
+                    new_line = re.sub(r'(@[!|\|]@) (?=\D|$)', r'\1', new_line)
+                    f_out.write(new_line)
+            return func(self, clean_file_a, file_b, log_file)
+        return wrapper
+    return decorator
 
 
 def count_lines(filename):
@@ -62,14 +75,34 @@ def remove_tmp_file():
     pass
 
 
-def check_result(file_a, file_b, log_file):
+def check_result(clean_file, file_b, log_file) -> dict:
+    """check logs file result, return the result."""
+    clean_file_lines = count_lines(clean_file)
+    log_file_lines = count_lines(log_file)
+
+    if log_file_lines == 0:                       # definitely success
+        compare_result = "success"
+    elif log_file_lines == clean_file_lines:      # the eaual number of rows means that the tow files are likely to be the same.
+        compare_result = "possible success"
+    else:
+        compare_result = "failed"
+
+    # captute the same lines of clean_file and file_b, And then we can find the diffences by comparing those two line.
+    process = subprocess.Popen(["head -1 %s" % clean_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    first_line_in_clean_file, err = process.communicate()
+    first_line_li = [col.strip() for col in re.split('@[!|\|]@', first_line_in_clean_file) if col]
+
+    pattern = '.*'.join(first_line_li[:2]) if len(first_line_li) <= 4 else '.*'.join(first_line_li[:5])
+    process = subprocess.Popen(["grep %s %s | head -1" % (pattern, file_b)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    captute_line_in_file_b, err = process.communicate()
+
     return {
-        'file_a': None,
-        'file_b': None,
-        'sample_line_in_file_a' : None,
-        'sample_line_in_file_b' : None,
-        'result' : 'success'
-    }
+                "clean_file_rows"  : clean_file_lines,
+                "log_file_rows"    : log_file_lines,
+                "ds_sampling_line" : first_line_in_clean_file,
+                "sh_sampling_line" : captute_line_in_file_b,
+                "compare_result"   : compare_result
+            }
 
 
 class FileCompare:
