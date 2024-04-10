@@ -6,7 +6,7 @@
 #                                                                             #
 # Author     : cl                                                             #
 # Version    : v1.1                                                           #
-# CreateTime : 2024/03/29                                                     #
+# CreTime    : 2024/03/29                                                     #
 # License    : Copyright (c) 2024 by cl                                       #
 # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
 
@@ -40,24 +40,24 @@ def clean_file(rows):
             else:
                 raise ValueError("illegal parameter: %s" % str(rows))
 
-            # 写入到清洗后的文件
-            clean_file_a = file_a + ".clean"
-            with open(clean_file_a, 'w') as f_out:
+            # 将清洗后的数据写入到clean_file_a文件
+            out_file = file_a + ".clean"
+            with open(out_file, 'w') as f_out:
                 for line in input_file:
-                    # 1.替换 000.000格式数据为0                   " 00000000000000000000.000000"  ->   0
+                    # 1.替换 000.000格式数据为0                 " 00000000000000000000.000000"  ->   0
                     new_line = re.sub(r'(@) 0+(0)\.0+(?=\D|$)', r'\1\2', line)
                     # 2.替换正decimal整型前后的0以及删除小数点     " 00000000000000000100.000000"  ->   100
                     new_line = re.sub(r'(@) 0+([0-9]*)\.0+(?=\D|$)', r'\1\2', new_line)
                     # 3.替换负decimal整型前后的0以及删除小数点     "-00000000000000000100.000000"  ->   -100
                     new_line = re.sub(r'(@-)0+([0-9]*)\.0+(?=\D|$)', r'\1\2', new_line)
-                    # 4.替换负decimal类型前后的0                  "-00000000000000000000.0002800" ->   -.00028
+                    # 4.替换负decimal类型前后的0                 "-00000000000000000000.0002800" ->   -.00028
                     new_line = re.sub(r'(@-)0+([0-9]*\.)([0-9]*?)0*(?=\D|$)', r'\1\2\3', new_line)
                     # 5.替换正decimal类型前后的0，删除空格         " 00000000000000000000.0002800" ->   .00028
                     new_line = re.sub(r'(@) 0+([0-9]*\.)([0-9]*?)0*(?=\D|$)', r'\1\2\3', new_line)
                     # 6.替换正NULL类型中间的空格，删除空格         "@!@ @!@" ->   "@!@@!@"
                     new_line = re.sub(r'(@[!|\|]@) (?=\D|$)', r'\1', new_line)
                     f_out.write(new_line)
-            return func(self, clean_file_a, file_b, log_file)
+            return func(self, out_file, file_b, log_file)
         return wrapper
     return decorator
 
@@ -73,6 +73,119 @@ def count_lines(filename):
 def remove_tmp_file():
     """清理多余的文件"""
     pass
+
+
+class FileCompare:
+    """文件比较策略类抽象接口"""
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def compare(self, file_a, file_b, log_file):
+        pass
+
+
+class SortSmallFileCompare(FileCompare):
+    """有序小文件对比，逐行对比"""
+    @clean_file("all")
+    def compare(self, file_a, file_b, log_file="run_out.log"):
+        with open(file_a, 'r') as f_a, open(file_b, 'r') as f_b, open(log_file, 'w') as log:
+            line_number = 0
+            # log.write(f"{str(datetime.now())}: lines in {file_a} but not in {file_b}.\n")
+            while True:
+                line_a = f_a.readline()
+                line_b = f_b.readline()
+                if not line_a and not line_b:
+                    break
+                line_number += 1
+                if line_a != line_b:
+                    log.write(f"Line {line_number}:\n{line_a.strip()} \n{line_b.strip()}")
+
+
+class UnSortSmallFileCompare(FileCompare):
+    """对比小文件，使用集合加减的方法对比"""
+    @clean_file("all")
+    def compare(self, file_a, file_b, log_file="run_out.log"):
+        with open(file_a, 'r') as f_a, open(file_b, 'r') as f_b, open(log_file, 'w') as log:
+            lines_a = set(f_a.readlines())
+            lines_b = set(f_b.readlines())
+
+            common_lines = lines_a.intersection(lines_b)
+            unique_lines_a = lines_a - common_lines
+
+            if unique_lines_a:
+                # log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), file_a, file_b))
+                for line in unique_lines_a:
+                    log.write(line)
+
+
+class UnSortLargeFileAllCompare(FileCompare):
+    """全量对比无序大文本，内存可能会占用较大"""
+    @staticmethod
+    def hash_file_lines_dict(file: str) -> dict:
+        """计算文件的每一行hash，存储行号跟哈希值到字典中"""
+        hash_dict = {}
+        with open(file, 'r') as file:
+            for i, line in enumerate(file, start=1):
+                line_hash = hashlib.md5(line.encode()).hexdigest()
+                # Store the hash value and line number in the dictionary
+                hash_dict[i] = line_hash
+        return hash_dict
+
+    @staticmethod
+    def hash_file_lines_set(file: str) -> set:
+        """计算文件的每一行hash，存储哈希值到集合中"""
+        hash_set = set({})
+        with open(file, 'r') as file:
+            for i, line in enumerate(file, start=1):
+                line_hash = hashlib.md5(line.encode()).hexdigest()
+                # Store the hash value and line number in the set
+                hash_set.add(line_hash)
+        return hash_set
+
+    def _compare(self, file_a, file_b, log_file):
+        # 计算文件的每一行hash值
+        hash_dict_a = self.hash_file_lines_dict(file_a)
+        hash_set_b = self.hash_file_lines_set(file_b)
+
+        # 写入差异行号到log文件中
+        with open(log_file, 'w') as log:
+            # log.write(f"{str(datetime.now())}: lines in {file_a} but not in {file_b}.\n")
+            for line_no, hash_val in hash_dict_a.items():
+                if hash_val in hash_set_b:         # set判断元素在其中是O(1)复杂度，在这里使用if提前continue无法提升性能
+                    log.write(f"line {str(line_no)} in\n")
+                    continue
+                else:
+                    log.write(f"line {str(line_no)} out\n")
+
+    @clean_file("all")
+    def compare(self, file_a, file_b, log_file):
+        self._compare(file_a, file_b, log_file)
+
+
+class UnSortLargeFileRandomCompare(UnSortLargeFileAllCompare):
+    """抽样对比无序大文本"""
+    @clean_file("top1000")
+    def compare(self, file_a, file_b, log_file):
+        # with open(file_a, 'r') as f_in:
+        #     rows = ''.join(itertools.islice(f_in, 100))
+        # with open(file_a, 'w') as f_out:
+        #     f_out.write(rows)
+        # os.system("head - 100 {} > {} && mv {} {}".format(file_a, random_file_a, random_file_a, file_b))
+        super(UnSortLargeFileRandomCompare, self)._compare(file_a, file_b, log_file)
+
+
+class CompareContext:
+    def __init__(self):
+        self.compare_strategy = None
+
+    def set_compare_strategy(self, compare_strategy):
+        self.compare_strategy = compare_strategy
+
+    def compare(self, file_a, file_b, log_file="run_out"):
+        self.compare_strategy.compare(file_a, file_b, log_file)
 
 
 def check_result(clean_file, file_b, log_file) -> dict:
@@ -103,115 +216,6 @@ def check_result(clean_file, file_b, log_file) -> dict:
                 "sh_sampling_line" : captute_line_in_file_b,
                 "compare_result"   : compare_result
             }
-
-
-class FileCompare:
-    """文件比较策略类抽象接口"""
-    __metaclass__ = ABCMeta
-
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def compare(self, file_a, file_b, log_file):
-        pass
-
-
-class SortSmallFileCompare(FileCompare):
-    """有序小文件对比，逐行对比"""
-    @clean_file
-    def compare(self, file_a, file_b, log_file="run_out.log"):
-        with open(file_a, 'r') as f_a, open(file_b, 'r') as f_b, open(log_file, 'w') as log:
-            line_number = 0
-            log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), file_a, file_b))
-            while True:
-                line_a = f_a.readline()
-                line_b = f_b.readline()
-                if not line_a and not line_b:
-                    break
-                line_number += 1
-                if line_a != line_b:
-                    log.write("Line {}:\n{} \n{}".format(line_number, line_a.strip(), line_b.strip()))
-
-
-class UnSortSmallFileCompare(FileCompare):
-    """对比小文件，使用集合加减的方法对比"""
-    @clean_file
-    def compare(self, file_a, file_b, log_file="run_out.log"):
-        with open(file_a, 'r') as f_a, open(file_b, 'r') as f_b, open(log_file, 'w') as log:
-            lines_a = set(f_a.readlines())
-            lines_b = set(f_b.readlines())
-
-            common_lines = lines_a.intersection(lines_b)
-            unique_lines_a = lines_a - common_lines
-
-            if unique_lines_a:
-                log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), file_a, file_b))
-                for line in unique_lines_a:
-                    log.write(line)
-
-
-class UnSortLargeFileAllCompare(FileCompare):
-    """全量对比无序大文本，内存可能会占用较大"""
-    @staticmethod
-    def hash_file_lines_dict(file: str) -> dict:
-        """计算文件的每一行hash，存储行号跟哈希值到字典中"""
-        hash_dict = {}
-        with open(file, 'r') as file:
-            for i, line in enumerate(file, start=1):
-                line_hash = hashlib.md5(line.encode()).hexdigest()
-                # Store the hash value and line number in the dictionary
-                hash_dict[i] = line_hash
-        return hash_dict
-
-    @staticmethod
-    def hash_file_lines_set(file: str) -> set:
-        """计算文件的每一行hash，存储哈希值到集合中"""
-        hash_set = set({})
-        with open(file, 'r') as file:
-            for i, line in enumerate(file, start=1):
-                line_hash = hashlib.md5(line.encode()).hexdigest()
-                # Store the hash value and line number in the set
-                hash_set.add(line_hash)
-        return hash_set
-
-    @clean_file
-    def compare(self, file_a, file_b, log_file):
-        # 计算文件的每一行hash值
-        hash_dict_a = self.hash_file_lines_dict(file_a)
-        hash_set_b = self.hash_file_lines_set(file_b)
-
-        # 写入差异行号到log文件中
-        with open(log_file, 'w') as log:
-            log.write("{}: lines in {} but not in {}.\n".format(str(datetime.now()), file_a, file_b))
-            for line_num, hash_val in hash_dict_a.items():
-                if hash_val in hash_set_b:         # set判断元素在其中是O(1)复杂度，在这里使用if提前continue无法提升性能
-                    log.write("line {} in\n".format(line_num))
-                    continue
-                else:
-                    log.write("line {} out\n".format(line_num))
-
-
-class UnSortLargeFileRandomCompare(UnSortLargeFileAllCompare):
-    """抽样对比无序大文本"""
-    def compare(self, file_a, file_b, log_file):
-        # with open(file_a, 'r') as f_in:
-        #     rows = ''.join(itertools.islice(f_in, 100))
-        # with open(file_a, 'w') as f_out:
-        #     f_out.write(rows)
-        # os.system("head - 100 {} > {} && mv {} {}".format(file_a, random_file_a, random_file_a, file_b))
-        super(UnSortLargeFileRandomCompare, self).compare(file_a, file_b, log_file)
-
-
-class CompareContext:
-    def __init__(self):
-        self.compare_strategy = None
-
-    def set_compare_strategy(self, compare_strategy):
-        self.compare_strategy = compare_strategy
-
-    def compare(self, file_a, file_b, log_file="run_out"):
-        self.compare_strategy.compare(file_a, file_b, log_file)
 
 
 def main():
