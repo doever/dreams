@@ -22,27 +22,58 @@ from abc import ABCMeta, abstractmethod
 
 
 def clean_file(func):
-    """装饰器函数，用于清洗文件"""
-    print("clean...")
-
+    """装饰器函数, 在比较前清洗文件，替换文件的金额类型"""
     def wrapper(self, file_a, file_b, log_file):
-        print("clean123...")
-        # 对 file_a 进行清洗
-        clean_file_a = file_a if file_a.endswith('clean') else file_a + ".clean"
-        with open(file_a, 'r') as f_in, open(clean_file_a, 'w') as f_out:
-            for line in f_in:
-                # 清洗文件内容
-                line = re.sub(r'(@) 0+(0)\.0+(?=\D|$)', r'\1\2', line)
-                line = re.sub(r'(@) 0+([0-9]*)\.0+(?=\D|$)', r'\1\2', line)
-                line = re.sub(r'(@-)0+([0-9]*\.)([0-9]*?)0*(?=\D|$)', r'\1\2\3', line)
-                line = re.sub(r'(@) 0+([0-9]*\.)([0-9]*?)0*(?=\D|$)', r'\1\2\3', line)
-                f_out.write(line)
-        # 调用被装饰的函数
+        # 对file_a开始清洗
+        # clean_file_a = file_a if file_a.endswith('clean') else file_a + ".clean"
+        clean_file_a = file_a + ".clean"
+
+        f_out = open(clean_file_a, 'w')
+        with open(file_a, 'r') as f_in:
+           for line in f_in:
+               # 1.替换 000.000格式数据为0                   " 00000000000000000000.000000"  ->   0
+               new_line = re.sub(r'(@) 0+(0)\.0+(?=\D|$)', r'\1\2', line)
+               # 2.替换正decimal整型前后的0以及删除小数点     " 00000000000000000100.000000"  ->   100
+               new_line = re.sub(r'(@) 0+([0-9]*)\.0+(?=\D|$)', r'\1\2', new_line)
+               # 3.替换负decimal整型前后的0以及删除小数点     "-00000000000000000100.000000"  ->   -100
+               new_line = re.sub(r'(@-)0+([0-9]*)\.0+(?=\D|$)', r'\1\2', new_line)
+               # 4.替换负decimal类型前后的0                  "-00000000000000000000.0002800" ->   -.00028
+               new_line = re.sub(r'(@-)0+([0-9]*\.)([0-9]*?)0*(?=\D|$)', r'\1\2\3', new_line)
+               # 5.替换正decimal类型前后的0，删除空格         " 00000000000000000000.0002800" ->   .00028
+               new_line = re.sub(r'(@) 0+([0-9]*\.)([0-9]*?)0*(?=\D|$)', r'\1\2\3', new_line)
+               # 6.替换正NULL类型中间的空格，删除空格         "@!@ @!@" ->   "@!@@!@"
+               new_line = re.sub(r'(@[!|\|]@) (?=\D|$)', r'\1', new_line)
+               f_out.write(new_line)
+        f_out.close()
         return func(self, clean_file_a, file_b, log_file)
     return wrapper
 
 
+def count_lines(filename):
+    """计算文件的行数"""
+    result = subprocess.run(['wc', '-l', filename], capture_output=True, text=True)
+    output = result.stdout.strip()
+    line_count = int(output.split()[0])
+    return line_count
+
+
+def remove_tmp_file():
+    """清理多余的文件"""
+    pass
+
+
+def check_result(file_a, file_b, log_file):
+    return {
+        'file_a': None,
+        'file_b': None,
+        'sample_line_in_file_a' : None,
+        'sample_line_in_file_b' : None,
+        'result' : 'success'
+    }
+
+
 class FileCompare:
+    """文件比较策略类抽象接口"""
     __metaclass__ = ABCMeta
 
     def __init__(self):
@@ -72,7 +103,6 @@ class SortSmallFileCompare(FileCompare):
 
 class UnSortSmallFileCompare(FileCompare):
     """对比小文件，使用集合加减的方法对比"""
-
     @clean_file
     def compare(self, file_a, file_b, log_file="run_out.log"):
         with open(file_a, 'r') as f_a, open(file_b, 'r') as f_b, open(log_file, 'w') as log:
@@ -91,7 +121,7 @@ class UnSortSmallFileCompare(FileCompare):
 class UnSortLargeFileAllCompare(FileCompare):
     """全量对比无序大文本，内存可能会占用较大"""
     @staticmethod
-    def hash_file_lines_dict(file):
+    def hash_file_lines_dict(file: str) -> dict:
         """计算文件的每一行hash，存储行号跟哈希值到字典中"""
         hash_dict = {}
         with open(file, 'r') as file:
@@ -102,7 +132,7 @@ class UnSortLargeFileAllCompare(FileCompare):
         return hash_dict
 
     @staticmethod
-    def hash_file_lines_set(file):
+    def hash_file_lines_set(file: str) -> set:
         """计算文件的每一行hash，存储哈希值到集合中"""
         hash_set = set({})
         with open(file, 'r') as file:
@@ -151,57 +181,47 @@ class CompareContext:
         self.compare_strategy.compare(file_a, file_b, log_file)
 
 
-def count_lines(filename):
-    """计算文件的行数"""
-    result = subprocess.run(['wc', '-l', filename], capture_output=True, text=True)
-    output = result.stdout.strip()
-    line_count = int(output.split()[0])
-    return line_count
-
-
-def remove_tmp_file():
-    """清理多余的文件"""
-    pass
-
-
 def main():
+    print("%s: begin to compare..." % str(datetime.now()))
+
+    # 接收用户参数
     if len(sys.argv) < 2:
         raise ValueError("Parameter error,Usage: python compare_file.py <file_a_path> <file_b_path>")
-
     file_a = sys.argv[1]
     file_b = sys.argv[2]
-    log_file = file_a + "_mismatch.log"
-    strict = False
+    log_file = file_a + ".mismatch.log"
+    random_compare = True
 
-    # count_a = count_lines(file_a)
-    # count_b = count_lines(file_b)
-    count_a = 15
-    count_b = 15
-
+    # 判断两个文件的行数是否一致
+    count_a = count_lines(file_a)
+    count_b = count_lines(file_b)
     if count_a != count_b:
-        with open(file_a + "_mismatch.txt", 'w') as f:
-            f.write("The number of lines in two files is not equal\n{}={}\n{}={}".format(file_a, count_a, file_b, count_b))
+        with open(log_file, 'w') as f:
+            f.write("The number of lines in two files is not equal\n%s=%s\n%s=%s" % (file_a, count_a, file_b, count_b))
         exit(-1)
 
-    # clean_file_a = clean_file(file_a)
-    compare_context = CompareContext()
-    if count_a <= 50 * 10000:
-        print(1)
-        # file_a = file_a + ".clean"
-        # with open(file_a[:-6], 'r') as f_in:
-        #     rows = ''.join(itertools.islice(f_in, 100))
-        # with open(file_a, 'w') as f_out:
-        #     f_out.write(rows)
-        compare_context.set_compare_strategy(UnSortLargeFileRandomCompare())
-
-    elif strict:
-        print(2)
-        compare_context.set_compare_strategy(UnSortLargeFileAllCompare())
+    # 选择对比策略
+    compare_file = CompareFile()
+    if count_a <= 50 * 10000:  # 全文本对比，集合加减
+        compare_file.set_compare_strategy(UnSortSmallFileCompare())
+    elif random_compare:  # 抽样对比，取文件的前1000行
+        file_a = file_a + '.random'
+        os.system("head -1000 %s > %s" % (file_a[:-7], file_a))
+        compare_file.set_compare_strategy(UnSortLargeFileRandomCompare())
     else:
-        print(3)
-        compare_context.set_compare_strategy(UnSortLargeFileRandomCompare())
+        compare_file.set_compare_strategy(UnSortLargeFileAllCompare())
 
-    compare_context.compare(file_a, file_b, log_file)
+    # 开始比较
+    compare_file.compare(file_a, file_b, log_file)
+
+    # 将比较结果记录到日志
+    result_di = check_result(file_a + '.clean', file_b, log_file)
+    with open(log_file, 'a') as log:
+        for k, v in result_di.items():
+            log.write("%s: %s\n" % (k, v))
+
+    remove_tmp_file()
+    print("%s: end..." % str(datetime.now()))
 
 
 if __name__ == "__main__":

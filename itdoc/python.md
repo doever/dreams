@@ -2,6 +2,22 @@
 
 ### python开头注释
 
+```python
+# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
+#                              ${NAME}.py                                     #
+# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
+# Description:                                                                #
+#     This script compares two files.                                         #
+#                                                                             #
+# Author     : cl                                                             #
+# Version    : v1.0                                                           #
+# CreateTime : ${DATE} ${TIME}                                                #
+# Copyright (c) 2024 by cl                                                    #
+# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
+```
+
+
+
 ![image-20240407142148861](D:\cl\dreams\static\pic\image-20240407142148861.png)
 
 1. #!/usr/bin/env [python](https://so.csdn.net/so/search?q=python&spm=1001.2101.3001.7020) 与 #!/usr/bin/python 的区别
