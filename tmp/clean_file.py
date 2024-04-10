@@ -7,7 +7,7 @@
 # Author     : cl                                                             #
 # Version    : v1.0                                                           #
 # CreateTime : 2024/4/10 9:05                                                 #
-# Copyright (c) 2024 by cl                                                    #
+# License    : Copyright (c) 2024 by cl                                       #
 # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
 
 
