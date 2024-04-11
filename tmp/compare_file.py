@@ -1,14 +1,14 @@
-# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
-#                              compare_file.py                                #
-# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
-# Description:                                                                #
-#     This script compares two files.                                         #
-#                                                                             #
-# Author     : cl                                                             #
-# Version    : v1.1                                                           #
-# CreTime    : 2024/03/29                                                     #
-# License    : Copyright (c) 2024 by cl                                       #
-# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
+# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
+#                                      compare_file.py                                        #
+# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
+# Description:                                                                                #
+#     This script compares two files.                                                         #
+#                                                                                             #
+# Author     : cl                                                                             #
+# Version    : v1.1                                                                           #
+# CreTime    : 2024/03/29                                                                     #
+# License    : Copyright (c) 2024 by cl                                                       #
+# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
 
 
 import os
@@ -238,7 +238,7 @@ def main():
         exit(-1)
 
     # 选择对比策略
-    compare_file = CompareFile()
+    compare_file = CompareContext()
     if count_a <= 50 * 10000:  # 全文本对比，集合加减
         compare_file.set_compare_strategy(UnSortSmallFileCompare())
     elif random_compare:  # 抽样对比，取文件的前1000行
