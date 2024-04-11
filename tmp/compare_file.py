@@ -226,7 +226,7 @@ def main():
         raise ValueError("Parameter error,Usage: python compare_file.py <file_a_path> <file_b_path>")
     file_a = sys.argv[1]
     file_b = sys.argv[2]
-    log_file = file_a + ".mismatch.log"
+    log_file = file_a + ".mismatch.txt"
     random_compare = True
 
     # 判断两个文件的行数是否一致
