@@ -41,13 +41,14 @@ for directory in "${directories[@]}"; do
         end_date=$(date -d "$work_dt -3 days" +%Y%m%d)
 
         # Loop through date directories and delete files
-        for ((date = start_date; date <= end_date; date++)); do
-            date_dir="$directory/$date"
+        while [[ $start_date -le $end_date ]]; do
+            date_dir="$directory/$start_date"
             if [ -d "$date_dir" ]; then
                 echo "Removing files in $date_dir"
                 rm -f "$date_dir"/*.dat  # Adjust file extension as needed
                 rmdir "$date_dir" 2>/dev/null
             fi
+            start_date=$(date -d "$start_date +1 day" +%Y%m%d)
         done
     else
         echo "Directory not found: $directory"

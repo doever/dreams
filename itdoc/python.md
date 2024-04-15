@@ -24,25 +24,131 @@
 
 **这些注释并不仅仅是写给读者看的注释，它也写给操作系统看的，这些注释决定了系统将如何运行这些文件。**
 
-linux自带python解释器。在编写.py文件时，只要写上了#!/usr/bin/python这行注释，用户就可以直接在命令行用文件名来执行py文件，例如：  testmode.py 
-
-它的意义就类似于在window命令行中，你必须得写 python testmode.py 或 javac testmode.java 或 java testmode.class 来运行文件，你要通过文件名前面的**关键字**才能去启动对应的解释器。而有了这行注释，Linux系统就知道了你要用什么来执行这个文件，你就可以直接用文件名去跑它了。
-
 \#!/usr/bin/python 注释的问题在于，Linux只系统默认的py解释器（也就是自带的那个）来运行文件。这样用户就无法使用自己的python版本了，不同的py版本之间语法有些差异，尤其是变动比较大的py2和py3，这些差异会使得整个程序无法正常运行。而#!/usr/bin/env python 的出现可则让用户可以自行选择python版本，用户可以在**环境变量**中配置自己的py解释器（ps：用户安装的版本默认定位在linux的local文件夹中）。#!/usr/bin/env python 这行注释，会使linux在解析文件时，知道要去使用环境变量中的py解释器而非系统自带的那个。
 
 所以如果你要使用该注释，推荐使用#!/usr/bin/env python 的注释，而非 #!/usr/bin/python。
 
- 
+### 函数注释（函数、方法、生成器）
 
-如果是在windows环境中执行文件的话，这行注释就无所谓了，因为你在cmd中，需要先定位到你py文件所在的文件夹后，再使用 python testmode.py 这样的语句来执行文件。window系统也不会去看这行注释.
+一个函数必须要有文档字符串，除非满足以下条件：
 
-4.如何在pyCharm中设置文件默认的开头的注释格式。如下：
+1. 外部不可见
+2. 非常短小
+3. 简单明了
 
-　　1.view中勾选Toolbar 工具条,点击设置,也可使用ctrl+alt+S进入
+文档字符串应该：
 
-　　![img](https://images2017.cnblogs.com/blog/1218858/201712/1218858-20171221163201100-1151374521.png)![img](https://images2017.cnblogs.com/blog/1218858/201712/1218858-20171221163244990-95463182.png)
+1. 包含函数做什么，而不是怎么做的。
+2. 让使用者不需要看一行代码，只需要看文档就可以
+3. 包含输入和输出的详细描述
+4. 对于复杂的代码可以在代码旁边加注释
+5. 覆盖基类的方法可以加：See base class
 
-　　2.选择editor下的file and code templates, 在右侧file中选择python script ,右侧输入注释
+在文档字符串中，应该根据不同的内容进行分组。文档字符串常用的分组：
+
+- Args:
+
+  
+
+  列出每个参数的名字, 并在名字后使用一个冒号和一个空格, 分隔对该参数的描述.如果描述太长超过了单行80字符,使用2或者4个空格的悬挂缩进(与文件其他部分保持一致). 描述应该包括所需的类型和含义. 如果一个函数接受*foo(可变长度参数列表)或者**bar (任意关键字参数), 应该详细列出`*foo`和`**bar`.
+
+- Returns:
+
+   
+
+  (或者 Yields: 用于生成器)
+
+  
+
+  描述返回值的类型和语义. 如果函数返回None, 这一部分可以省略.
+
+- Raises:
+
+  
+
+  列出与接口有关的所有异常.
+
+  示例
+
+  ```python
+  def fetch_smalltable_rows(table_handle: smalltable.Table,
+                          keys: Sequence[Union[bytes, str]],
+                          require_all_keys: bool = False,
+  ) -> Mapping[bytes, Tuple[str]]:
+      """Fetches rows from a Smalltable.
+  
+      Retrieves rows pertaining to the given keys from the Table instance
+      represented by table_handle.  String keys will be UTF-8 encoded.
+  
+      Args:
+          table_handle: An open smalltable.Table instance.
+          keys: A sequence of strings representing the key of each table
+          row to fetch.  String keys will be UTF-8 encoded.
+          require_all_keys: Optional; If require_all_keys is True only
+          rows with values set for all keys will be returned.
+  
+      Returns:
+          A dict mapping keys to the corresponding table row data
+          fetched. Each row is represented as a tuple of strings. For
+          example:
+  
+          {b'Serak': ('Rigel VII', 'Preparer'),
+          b'Zim': ('Irk', 'Invader'),
+          b'Lrrr': ('Omicron Persei 8', 'Emperor')}
+  
+          Returned keys are always bytes.  If a key from the keys argument is
+          missing from the dictionary, then that row was not found in the
+          table (and require_all_keys must have been False).
+  
+      Raises:
+          IOError: An error occurred accessing the smalltable.
+      """
+  ```
+
+### 类注释
+
+类应该在其定义下有一个用于描述该类的文档字符串. 如果有公共属性(Attributes), 那么文档中应该有一个属性(Attributes)段. 并且应该和函数参数的格式相同。
+
+```
+class SampleClass(object):
+    """Summary of class here.
+
+    Longer class information....
+    Longer class information....
+
+    Attributes:
+        likes_spam: A boolean indicating if we like SPAM or not.
+        eggs: An integer count of the eggs we have laid.
+    """
+
+    def __init__(self, likes_spam=False):
+        """Inits SampleClass with blah."""
+        self.likes_spam = likes_spam
+        self.eggs = 0
+
+    def public_method(self):
+        """Performs operation blah."""
+```
+
+### 块注释和行注释
+
+如果代码在代码审查的时候，可能需要再次思索该代码意义，那么就应该写注释。
+
+需要注意以下两点：
+
+1. 行注释，应离开代码最少两个空格。
+2. 不要描述代码，阅读代码的时候，一般不是看不懂，而不是不认识。
+
+示例：
+
+```
+# We use a weighted dictionary search to find out where i is in
+# the array.  We extrapolate position based on the largest num
+# in the array and the array size and then do binary search to
+# get the exact number.
+
+if i & (i-1) == 0:        # True if i is 0 or a power of 2.
+```
 
 
 

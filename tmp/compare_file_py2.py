@@ -15,7 +15,9 @@ import os
 import re
 import sys
 import hashlib
+import logging
 import subprocess
+
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
 
@@ -93,7 +95,7 @@ def remove_tmp_file():
 
 
 class FileCompare:
-    """抽象文件比较类接口"""
+    """文件比较类抽象接口"""
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -147,7 +149,7 @@ class UnSortSmallFileCompare(FileCompare):
 class UnSortLargeFileAllCompare(FileCompare):
     """全量对比无序大文本，内存可能会占用较大"""
     @staticmethod
-    def file_hash_lines_dict(file):
+    def file_lines_hash_dict(file):
         """将文件的每一行转成hash的字典"""
         hash_dict = {}
         with codecs.open(file, 'r', encoding='gb18030', errors='ignore') as file:
@@ -163,7 +165,7 @@ class UnSortLargeFileAllCompare(FileCompare):
         return hash_dict
 
     @staticmethod
-    def file_hash_lines_set(file):
+    def file_lines_hash_set(file):
         """将文件的每一行转成hash的集合"""
         hash_set = set({})
         with codecs.open(file, 'r', encoding='gb18030', errors='ignore') as file:
@@ -178,52 +180,43 @@ class UnSortLargeFileAllCompare(FileCompare):
 
         return hash_set
 
+    def _compare(self, file_a, file_b, mismatch_file):
+        # 将文件a,b的的每一行转换成哈希字典{line_hash_value: line_number, ...}
+        LOGGER.info("hash files...")
+        try:
+            hash_dict_a = self.file_lines_hash_dict(file_a)
+            hash_set_b = self.file_lines_hash_set(file_b)
+        except MemoryError as err:  # 内存溢出
+            LOGGER.error("run out of memory, %s" % err)
+            del hash_dict_a, hash_set_b
+            exit(-999)
 
-def _compare(self, file_a, file_b, mismatch_file):
-    # 将文件a,b的的每一行转换成哈希字典{line_hash_value: line_number, ...}
-    LOGGER.info("hash files...")
-    try:
-        hash_dict_a = self.file_hash_lines_dict(file_a)
-        hash_set_b = self.file_hash_lines_set(file_b)
-    except MemoryError as err:  # 内存溢出
-        LOGGER.error("run out of memory, %s" % err)
-        del hash_dict_a, hash_set_b
-        exit(-999)
+        LOGGER.info("compare the hash value...")
+        # 将不在文件B的hash value以及行号写入日志
+        with open(mismatch_file, 'w') as mismatch_file:
+            for line_no, hash_val in hash_dict_a.items():
+                if hash_val in hash_set_b:
+                    # log.write("line %s\n in" % line_no)
+                    continue
+                else:
+                    mismatch_file.write("line %s escaped.\n" % str(line_no))
 
-    LOGGER.info("compare the hash value...")
-    # 将不在文件B的hash value以及行号写入日志
-    with open(mismatch_file, 'w') as mismatch_file:
-        for line_no, hash_val in hash_dict_a.items():
-            if hash_val in hash_set_b:
-                # log.write("line %s\n in" % line_no)
-                continue
-            else:
-                mismatch_file.write("line %s escaped.\n" % str(line_no))
-
-
-@clean_file("all_rows")
-def compare(self, file_a, file_b, mismatch_file):
-    LOGGER.info("UnSort large file all compare...")
-    self._compare(file_a, file_b, mismatch_file)
+    @clean_file("all_rows")
+    def compare(self, file_a, file_b, mismatch_file):
+        LOGGER.info("UnSort large file all compare...")
+        self._compare(file_a, file_b, mismatch_file)
 
 
 class UnSortLargeFileRandomCompare(UnSortLargeFileAllCompare):
     """抽样对比无序大文本"""
-
     @clean_file('top_1000_rows')
     def compare(self, file_a, file_b, mismatch_file):
         LOGGER.info("UnSort large file random compare...")
-        # with open(file_a, 'r') as f_in:
-        #    rows = ''.join(itertools.islice(f_in, 100))
-        # with open(file_a, 'w') as f_out:
-        #    f_out.write(rows)
-        # os.system("head - 100 {} > {} && mv {} {}".format(file_a, random_file_a, random_file_a, file_b))
         super(UnSortLargeFileRandomCompare, self)._compare(file_a, file_b, mismatch_file)
 
 
 class CompareFile:
     """比较策略上下文"""
-
     def __init__(self):
         self.compare_strategy = None
 
@@ -235,14 +228,20 @@ class CompareFile:
 
 
 def check_result(clean_file, file_b, mismatch_file):
-    """
-        check logs file result, And return the result.
-        args:
-            clean_file: clean file absolute path
-            file_b: file_b absolute path
-            mismatch_file: mismatch file absolute path
-        return:
-            a dict such like: {"clean_file_rows": "1000", "mismatch_file_rows": "0", "sampling_line_a": "", "sampling_line_b": "", "compare_result": "success"}
+    """check mismatch file, And provide a reference result dict, The result dict maybe not right.
+    args:
+        clean_file: file exported from the datastage, and cleaned by decorator.
+        file_b: file exported from the script.
+        mismatch_file: recode mismatch lines.
+    return:
+        a dict, example:
+        {
+           "clean_file_rows": "1000",
+            "mismatch_file_rows": "0",
+            "sampling_line_a": "00001000@!@.10000.00010.22000.23456.@!@aimi@!@2021-01-01@!@ 00000.0240",
+            "sampling_line_b": "00001000@!@.10000.00010.22000.23456.@!@aimi@!@2021-01-01@!@.024",
+            "compare_result": "success"
+        }
     """
 
     clean_file_lines = count_lines(clean_file)
@@ -262,7 +261,7 @@ def check_result(clean_file, file_b, mismatch_file):
     else:
         compare_result = "failed"
 
-    # captute the same lines of clean_file and file_b, And then we can find the diffences by comparing those two line.
+    # capture the same lines of clean_file and file_b, And then we can find the diffences by comparing those two line.
     first_mismatch_line = run_cmd(["head -1 %s" % mismatch_file])
     # if the contents of mismatch_line are only line numbers, find the corresponding line in the clean file accroding to the line numbers
     if first_mismatch_line.startswith("line"):
@@ -272,13 +271,13 @@ def check_result(clean_file, file_b, mismatch_file):
     first_line_li = [col.strip() for col in re.split('@[!|\|]@', first_mismatch_line) if col]
 
     pattern = '.*'.join(first_line_li[:2]) if len(first_line_li) <= 4 else '.*'.join(first_line_li[:5])
-    captute_line_in_file_b = run_cmd(["grep %s %s | head -1" % (pattern, file_b)])
+    capture_line_in_file_b = run_cmd(["grep %s %s | head -1" % (pattern, file_b)])
 
     return {
         "clean_file_rows": clean_file_lines,
         "mismatch_rows": mismatch_file_lines,
         "ds_sampling_line": first_mismatch_line,
-        "sh_sampling_line": captute_line_in_file_b,
+        "sh_sampling_line": capture_line_in_file_b,
         "compare_result": compare_result
     }
 
@@ -298,16 +297,16 @@ def main():
     mismatch_file = file_a + ".mismatch.txt"
     random_compare = True
 
-    # 判断文件是否存在
-    if not os.path.isfile(file_a) or not os.path.isfile(file_b):
-        print("no such files <%s> or <%s>" % (file_a, file_b))
-        exit(-1)
-
     # 定义日志对象
     log_file = file_a + ".run.log"
     logging.basicConfig(level=logging.INFO, filename=log_file, format='%(asctime)s - %(levelname)s - %(message)s')
     LOGGER = logging.getLogger("Compare")
     LOGGER.info("begin compare...")
+
+    # 判断文件是否存在
+    if not os.path.isfile(file_a) or not os.path.isfile(file_b):
+        LOGGER.error("no such files <%s> or <%s>" % (file_a, file_b))
+        exit(-1)
 
     # 判断两个文件的行数是否一致
     count_a = count_lines(file_a)
@@ -318,9 +317,9 @@ def main():
 
     # 选择对比策略
     compare_file = CompareFile()
-    if count_a <= 10 * 10000:  # 全文本对比，集合加减
+    if count_a <= 30 * 10000:  # 全文本对比，集合加减
         compare_file.set_compare_strategy(UnSortSmallFileCompare())
-    elif random_compare:  # 抽样对比，取文件的前1000行
+    elif random_compare:       # 抽样对比，取文件的前1000行
         compare_file.set_compare_strategy(UnSortLargeFileRandomCompare())
     else:
         compare_file.set_compare_strategy(UnSortLargeFileAllCompare())
@@ -333,9 +332,8 @@ def main():
     with open(mismatch_file, 'a') as f_mismatch_file:
         for k, v in result_di.items():
             f_mismatch_file.write("\n%s: %s" % (k, v))
-            # LOGGER.info("%s: %s\n" % (k, v))
 
-    # 移动生成的清洗文件，mismatch文件，程序日志文件到/etl/dwexp/crm/log/compare, 如果文件已存在就不覆盖
+    # 移动生成的清洗文件，mismatch文件，日志文件到/etl/dwexp/crm/log/compare, 如果文件已存在就不覆盖
     for source_file in [mismatch_file, log_file, file_a + '.clean.txt']:
         file_name = os.path.split(source_file)[-1]
         target_dir = os.path.join(BASE_PATH, "compare")

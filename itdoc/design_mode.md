@@ -1571,7 +1571,7 @@ manager.process_request(8000)
 
 Certainly! Here's a simple Python example of the Observer pattern:
 
-```
+```python
 # Subject (Observable)
 class Subject:
     def __init__(self):
