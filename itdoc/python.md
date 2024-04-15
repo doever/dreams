@@ -7,7 +7,7 @@
 #                              ${NAME}.py                                     #
 # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
 # Description:                                                                #
-#     This script compares two files.                                         #
+#     This script .                                                           #
 #                                                                             #
 # Author     : cl                                                             #
 # Version    : v1.0                                                           #
