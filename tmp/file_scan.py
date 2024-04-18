@@ -10,23 +10,6 @@
 # License    : Copyright (c) 2024 by cl, All rights reserved                                  #
 # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
 
-# -.- coding: utf-8 -.-
-
-# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
-#                                 satrt_file_scan.py                                        #
-# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
-# Description:                                                                              #
-#      batch call compare_file script.                                                      #
-#                                                                                           #
-# Author     : chenlong                                                                     #
-# Version    : v1.0                                                                         #
-# CreDate    : 2024/04/15                                                                   #
-# License    : Copyright (c) 2024 by cl                                                     #
-# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
-
-## 是否有最大触发限制
-## 生产环境ora解析是否有问题
-
 import os
 import re
 import sys
@@ -36,6 +19,16 @@ import base64
 import logging
 import subprocess
 import requests
+
+
+FLOW_MAPPING = {
+    "主流名称1": "FLOW_TIME1",
+    "主流名称2": "FLOW_TIME2",
+    "主流名称3": "FLOW_TIME3",
+    "其他流1": "FLOW_TIME4",
+    "其他流2": "FLOW_TIME5",
+    "其他流3": "FLOW_TIME6",
+}
 
 
 class OraDB:
@@ -174,14 +167,7 @@ def run_cmd(cmd_list):
 
 
 def client():
-    flow_map = {
-        "主流名称1": "FLOW_TIME1",
-        "主流名称2": "FLOW_TIME2",
-        "主流名称3": "FLOW_TIME3",
-        "其他流1": "FLOW_TIME4",
-        "其他流2": "FLOW_TIME5",
-        "其他流3": "FLOW_TIME6",
-    }
+
     # 创建日志目录
     # log_dir = "/etl/dwexp/log"
     # os.system("mkdir -p %s" % os.path.join(log_dir))
@@ -194,7 +180,7 @@ def client():
     work_dt = sys.argv[2]
 
     # 验证参数，防止注入问题
-    if not flow_map.get(flow_name) and not re.match("20\d{6}", work_dt):
+    if not FLOW_MAPPING.get(flow_name) and not re.match("20\d{6}", work_dt):
         print("Parameter value error, undefined flow_namr %s or false date format" % (flow_name, work_dt))
         exit(-2)
 
@@ -211,15 +197,15 @@ def client():
     etl_agent.add_observers(observer)  # 绑定订阅者
 
     while True:  # 循环读流日期差值，直到当前流的日期与最小流日期差值小于3天
-        cols = ",".join(flow_map.values())
-        res = DB.select("select %s-least(%s) from f_cm_bat_times" % (flow_map.get(flow_name), flow_map.get(flow_name)))
+        cols = ",".join(FLOW_MAPPING.values())
+        res = DB.select("select %s-least(%s) from f_cm_bat_times" % (FLOW_MAPPING.get(flow_name), FLOW_MAPPING.get(flow_name)))
         date_diff = res[0][0]
         if date_diff >= 3:
             time.sleep(300)
         else:
             # 流翻牌, 修改流日期+1
             DB.update(
-                "update f_cm_bat_times set %s=%s+1 where 1=1" % (flow_map.get(flow_name), flow_map.get(flow_name)))
+                "update f_cm_bat_times set %s=%s+1 where 1=1" % (FLOW_MAPPING.get(flow_name), FLOW_MAPPING.get(flow_name)))
         break
 
     etl_jobs = ["see u someday"]
