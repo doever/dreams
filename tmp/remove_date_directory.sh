@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
-#                                 batch_exec_compare.sh                                       #
+#                                 remove_date_directory.sh                                    #
 # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
 # Description:                                                                                #
-#     This script Batch execution compare_file script.                                        #
+#     This script remove date directory.                                                      #
 #                                                                                             #
 # Author     : cl                                                                             #
 # Version    : v1.0                                                                           #
