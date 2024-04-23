@@ -27,6 +27,7 @@ for ((date = start_date; date <= end_date; date++)); do
     fi
 done
 
+
 # 清理/etl/dwexp/crm下日期目录
 for ((date = $(date -d $start_date +%s); date <= $(date -d $end_date +%s); date += 86400)); do
     current_date=$(date -d @$date +%Y%m%d)
