@@ -9,7 +9,7 @@ create user {username} IDENTIFIED BY {password} default tablespace {tablespace_n
 temporary tablespace {tempspace_name} profile DEFAULT;
 
 
--- 3. 授予两个用户能互相访问
+-- 3. 授予两个用户能互相访问（只读权限）
 GRANT CREATE SESSION TO source_user;
 GRANT CREATE SESSION TO new_user;
 
