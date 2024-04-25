@@ -4,24 +4,90 @@
 -- 1. 扩容表空间
 create tablespace {tablespace_name} datafile 'TABLESPACE_QCJ.dbf' size 1024M autoextend on next 5M maxsize unlimited;;
 
+
 -- 2. 创建用户crm2, 指定默认表空间
 create user {username} IDENTIFIED BY {password} default tablespace {tablespace_name}
 temporary tablespace {tempspace_name} profile DEFAULT;
+
 
 -- 3. 授予crm, crm2用户能互相访问（只读权限）
 GRANT CREATE SESSION TO source_user;
 GRANT CREATE SESSION TO new_user;
 
+
 -- 4. 数据同步
     a. 复制非分区表包含索引;
+    SELECT DBMS_METADATA.GET_DDL('TABLE', 'old_table') FROM DUAL;
 
     b. 复制分区表重建分区;
 
     c. 重建其他对象（存储过程，函数，触发器，序列）;
+        索引： 可以查询 USER_INDEXES、ALL_INDEXES 或 DBA_INDEXES 视图来获取索引的信息，然后通过索引的名称从 USER_IND_COLUMNS、ALL_IND_COLUMNS 或 DBA_IND_COLUMNS 视图中获取索引列的信息。
+        SELECT DBMS_METADATA.GET_DDL('INDEX', index_name, owner) AS index_ddl
+        FROM all_indexes
+        WHERE owner = 'your_schema';
+
+        触发器： 使用 USER_TRIGGERS、ALL_TRIGGERS 或 DBA_TRIGGERS 视图来获取触发器的信息，并使用 DBMS_METADATA.GET_DDL 函数来获取触发器的 DDL。
+        SELECT DBMS_METADATA.GET_DDL('TRIGGER', trigger_name, owner) AS trigger_ddl
+        FROM all_triggers
+        WHERE owner = 'your_schema';
+
+        函数和存储过程： 可以从 USER_PROCEDURES、ALL_PROCEDURES 或 DBA_PROCEDURES 视图中获取函数和存储过程的信息，并使用 DBMS_METADATA.GET_DDL 函数来获取其 DDL。
+        SELECT DBMS_METADATA.GET_DDL('FUNCTION', object_name, owner) AS function_ddl
+        FROM all_procedures
+        WHERE object_type = 'FUNCTION' AND owner = 'your_schema';
+
+        SELECT DBMS_METADATA.GET_DDL('PROCEDURE', object_name, owner) AS procedure_ddl
+        FROM all_procedures
+        WHERE object_type = 'PROCEDURE' AND owner = 'your_schema';
+
+
+
 
 -- 5. Etl批脚本部署
-    a.复制目录/cimcim/script_new/到新路径：()
-        cp -r /cimcim/script /cimcim/script_new
+    a.复制目录/cimcim/script_new/到新路径：(需要确认涉及的脚本，是否/cimcim/下面的都需要部署)
+        cp -r /cimcim /cimcim/new/
+
+    b.修改oracle配置文件后，修改涉及sqlplus调用的脚本（sqlload.sh）,改变配置文件的指向，
+      检查其他脚本中是否有路径写死的情况
+
+    c.新调度文档配置，改成调用新部署的脚本
+
+
+
+
+
+
+
+索引：
+sql
+Copy code
+SELECT DBMS_METADATA.GET_DDL('INDEX', index_name) AS index_ddl
+FROM user_indexes;
+触发器：
+sql
+Copy code
+SELECT DBMS_METADATA.GET_DDL('TRIGGER', trigger_name) AS trigger_ddl
+FROM user_triggers;
+函数和存储过程：
+sql
+Copy code
+SELECT DBMS_METADATA.GET_DDL('FUNCTION', object_name) AS function_ddl
+FROM user_procedures
+WHERE object_type = 'FUNCTION';
+
+SELECT DBMS_METADATA.GET_DDL('PROCEDURE', object_name) AS procedure_ddl
+FROM user_procedures
+WHERE object_type = 'PROCEDURE';
+
+主键
+SELECT 'ALTER TABLE ' || table_name || ' ADD CONSTRAINT ' || constraint_name || ' PRIMARY KEY (' || column_list || ');'
+FROM user_constraints
+WHERE constraint_type = 'P';
+外键
+SELECT 'ALTER TABLE ' || table_name || ' ADD CONSTRAINT ' || constraint_name || ' FOREIGN KEY (' || column_list || ') REFERENCES ' || r_table_name || ' (' || r_column_list || ');'
+FROM user_constraints
+WHERE constraint_type = 'R';
 
 
 
@@ -75,3 +141,50 @@ END;
     b.我还要在循环中使用post请求判断这个调度的任务状态，如果有这个job我就不执行a
     c.job如果完成了，数据库的这个配置作业表的日期加1
 
+
+
+关于之前导包的问题，我有点疑问
+dreams
+└───project/
+    ├──__init__.py
+    ├── common/
+    │   └──db.py
+    │   └── __init__.py
+    └── etlbat/
+        └── role_allocate.py
+        └── __init__.py
+结构如上，我需要在role_allocate.py import db.py,我在role_allocate.py 中使用
+from project.common.db import *
+导入，结果我在pycharm里面可以执行，但是在cmd中直接使用python执行却报错了ModuleNotFoundError: No module named 'project'
+在pycharm执行中的sys.path 是['D:\\cl\\dreams\\project\\etlbat', 'D:\\cl\\dreams', 'D:\\AppGallery\\Software\\PyCharm 2023.3.1\\plugins\\python\\helpers\\pycharm_display', 'D:\\AppGallery\\Software\\python\\python39.zip', 'D:\\AppGallery\\Software\\python\\DLLs', 'D:\\AppGallery\\Software\\python\\lib', 'D:\\AppGallery\\Software\\python', 'D:\\AppGallery\\Software\\python\\lib\\site-packages', 'D:\\AppGallery\\Software\\PyCharm 2023.3.1\\plugins\\python\\helpers\\pycharm_matplotlib_backend']
+在cmd执行的sys.path 是['D:\\cl\\dreams\\project\\etlbat', 'D:\\AppGallery\\Software\\python\\python39.zip', 'D:\\AppGallery\\Software\\python\\DLLs', 'D:\\AppGallery\\Software\\python\\lib', 'D:\\AppGallery\\Software\\python', 'D:\\AppGallery\\Software\\python\\lib\\site-packages']
+
+
+结构如下
+test
+└───a/
+│   ├──__init__.py
+│   ├── aa/
+│   │   └──aaf.py
+│   │── af.py
+└───b/
+│   └── bf.py
+│   └── __init__.py
+└───test.py
+
+aaf.py代码：
+def test2():
+    print("aafaffff")
+
+af.py代码：
+from aa.aaf import test2
+def af_print():
+    print("afffff")
+if __name__ == '__main__':
+    test2()
+
+test.py代码：
+from a.af import af_print
+af_print()
+
+执行test.py 报错 ModuleNotFoundError: No module named 'aa'
