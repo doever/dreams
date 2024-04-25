@@ -1,17 +1,40 @@
 -- etl批处理程序的调度系统升级，需要使用新老调度并行去跑数据，但是oracle实例只有一个，怎么去比对新老调度执行一个日批后的结果呢
 
 
--- 1. 创建表空间
+-- 1. 扩容表空间
 create tablespace {tablespace_name} datafile 'TABLESPACE_QCJ.dbf' size 1024M autoextend on next 5M maxsize unlimited;;
 
--- 2. 创建用户
+-- 2. 创建用户crm2, 指定默认表空间
 create user {username} IDENTIFIED BY {password} default tablespace {tablespace_name}
 temporary tablespace {tempspace_name} profile DEFAULT;
 
-
--- 3. 授予两个用户能互相访问（只读权限）
+-- 3. 授予crm, crm2用户能互相访问（只读权限）
 GRANT CREATE SESSION TO source_user;
 GRANT CREATE SESSION TO new_user;
+
+-- 4. 数据同步
+    a. 复制非分区表包含索引;
+
+    b. 复制分区表重建分区;
+
+    c. 重建其他对象（存储过程，函数，触发器，序列）;
+
+-- 5. Etl批脚本部署
+    a.复制目录/cimcim/script_new/到新路径：()
+        cp -r /cimcim/script /cimcim/script_new
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 -- 4. 同步所有对象（不包含数据）
 DECLARE

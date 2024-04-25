@@ -31,10 +31,31 @@ class A:
 
 
 class B(A):
+    """
+    this class test the decor function
+
+    args:
+        word -> str : any word or text
+    return:
+        int : count of word
+    """
     @decor
     def print_log(self):
         print('hello B')
         super()._inside()
+
+
+def count_word(word):
+    """
+    this function counts the occurences of a word in a word
+
+    args:
+        word -> str : any word or text
+    return:
+        int : count of word
+    """
+    print(word)
+    return 0
 
 
 if __name__ == '__main__':

@@ -116,6 +116,7 @@ class Observer(object):
             response = requests.post(self.query_job_url, data=js_data, headers=self.headers)
         except Exception as err:
             LOGGER.error("query job process request error:%s" % err)
+            raise FileNotFoundError
         else:
             if response.status_code != '200':
                 LOGGER.warning("query job process request failed, response code is %s, mes:%s" % (
