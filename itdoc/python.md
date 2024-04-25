@@ -18,6 +18,42 @@ unicode序列：
 
 ### python3：
 
+---
+
+## 导包
+
+**在入口程序中将项目所在的根目录添加到sys.path中**
+
+```python
+import sys
+import os
+
+# 将项目的根目录添加到sys.path中
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))    
+sys.path.append(BASE_DIR)
+
+# 导入包或模块
+from db.mysql.my_connect import connect
+```
+
+项目结构：
+
+/src/common
+
+​							\_\_init\_\_.py
+
+​							tools.py
+
+/src/compare
+
+​							compare.py
+
+在compare.py中引用tools.py
+
+​							
+
+
+
 
 
 ---
@@ -297,7 +333,7 @@ class IntClass(object):
         # return '123'
 ```
 
-__name__ 与 __main__
+## __name__ 与 __main__
 
 **python的main是什么，为什么打印类的时候会出现main.类名**
 
@@ -365,17 +401,31 @@ e# 如果 my_module.py 被导入到其他模块，__name__ 的值为 "my_module"
 3. 3.**在交互式环境中的情况：** 在交互式环境中，`__name__` 的值为 `"__main__"`，与直接执行脚本时的情况相同。这样可以使得在交互环境中定义的函数或变量与脚本中的行为一致。
 
    ```
-# 在交互式环境中
+   
+   ```
+
+在交互式环境中
+
    >>> __name__
    '__main__'
+   
    ```
    
+   ```
+
 4. 4.**在 Python 脚本中运行的模块的情况：** 如果一个 Python 脚本中的代码块（而非被导入的模块）被执行，`__name__` 的值为 `"__main__"`。
 
    ```
-# 在运行的 Python 脚本中
+   
+   ```
+
+在运行的 Python 脚本中
+
    >>> __name__
    '__main__'
+   
+   ```
+   
    ```
 
 总体来说，`__name__` 在不同的执行环境中扮演不同的角色，提供了一种机制来判断代码是在何种上下文中运行的。

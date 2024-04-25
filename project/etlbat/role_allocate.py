@@ -11,13 +11,16 @@
 # *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
 
 
+import os
 import sys
 import csv
 import codecs
 import logging
 import argparse
 
-from common import get_db_conn, execute_command
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
+from common.db import get_db_conn, execute_command
 
 
 def generator_role_allocate_sql(role_csv_file, role_map):
