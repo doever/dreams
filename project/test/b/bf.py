@@ -1,15 +1,8 @@
-# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* *-*-*-*-*-*-*-* #
-#                                 test2.py.py                                                  #
-# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* *-*-*-*-*-*-*-* #
-# Description:                                                                                #
-#     This script compares two files.                                                         #
-#                                                                                             #
-# Author     : cl                                                                             #
-# Version    : v1.0                                                                           #
-# CreTime    : 2024/4/25                                                                      #
-# License    : Copyright (c) 2024 by cl, All rights reserved                                  #
-# *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-* #
+import os
+import sys
 
+print(os.path.realpath(__file__))
+print(os.path.dirname(os.path.realpath(__file__)))
 
 def bf_print():
     print("I am bf file")

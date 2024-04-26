@@ -83,7 +83,7 @@ BEGIN
   FOR obj IN (SELECT table_name FROM all_tables WHERE owner = 'source_user' AND table_name LIKE 'table_name_%') LOOP
     EXECUTE IMMEDIATE 'INSERT INTO new_user.' || obj.table_name || ' SELECT * FROM source_user.' || obj.table_name || ' WHERE date_column = :1' USING v_date;
   END LOOP;
-END;
+END
 /
 
 -- 6. 重建索引
@@ -97,57 +97,3 @@ BEGIN
 END;
 /
 
-
-我有一批需要加载的文件作业，文件名存在数据库配置作业表里面，当我开始一天的批量的时候，我从数据库读出这些文件接口名，
-然后一直循环去判断这些文件是否生成，
-    a.如果文件生成了，我就发送一条post请求给调度系统，调度系统就调用执行这个文件的ETL作业
-    b.我还要在循环中使用post请求判断这个调度的任务状态，如果有这个job我就不执行a
-    c.job如果完成了，数据库的这个配置作业表的日期加1
-
-
-
-关于之前导包的问题，我有点疑问
-dreams
-└───project/
-    ├──__init__.py
-    ├── common/
-    │   └──db.py
-    │   └── __init__.py
-    └── etlbat/
-        └── role_allocate.py
-        └── __init__.py
-结构如上，我需要在role_allocate.py import db.py,我在role_allocate.py 中使用
-from project.common.db import *
-导入，结果我在pycharm里面可以执行，但是在cmd中直接使用python执行却报错了ModuleNotFoundError: No module named 'project'
-在pycharm执行中的sys.path 是['D:\\cl\\dreams\\project\\etlbat', 'D:\\cl\\dreams', 'D:\\AppGallery\\Software\\PyCharm 2023.3.1\\plugins\\python\\helpers\\pycharm_display', 'D:\\AppGallery\\Software\\python\\python39.zip', 'D:\\AppGallery\\Software\\python\\DLLs', 'D:\\AppGallery\\Software\\python\\lib', 'D:\\AppGallery\\Software\\python', 'D:\\AppGallery\\Software\\python\\lib\\site-packages', 'D:\\AppGallery\\Software\\PyCharm 2023.3.1\\plugins\\python\\helpers\\pycharm_matplotlib_backend']
-在cmd执行的sys.path 是['D:\\cl\\dreams\\project\\etlbat', 'D:\\AppGallery\\Software\\python\\python39.zip', 'D:\\AppGallery\\Software\\python\\DLLs', 'D:\\AppGallery\\Software\\python\\lib', 'D:\\AppGallery\\Software\\python', 'D:\\AppGallery\\Software\\python\\lib\\site-packages']
-
-
-结构如下
-test
-└───a/
-│   ├──__init__.py
-│   ├── aa/
-│   │   └──aaf.py
-│   │── af.py
-└───b/
-│   └── bf.py
-│   └── __init__.py
-└───test.py
-
-aaf.py代码：
-def test2():
-    print("aafaffff")
-
-af.py代码：
-from aa.aaf import test2
-def af_print():
-    print("afffff")
-if __name__ == '__main__':
-    test2()
-
-test.py代码：
-from a.af import af_print
-af_print()
-
-执行test.py 报错 ModuleNotFoundError: No module named 'aa'

@@ -19,23 +19,20 @@ import codecs
 import logging
 import argparse
 
-# BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# sys.path.append(BASE_DIR)
-# from common.db import get_db_conn, execute_command, test
-print(sys.path)
-from project.common.db import *
-test()
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
+from common.db import get_db_conn, execute_command, test
 
 
 def generator_role_allocate_sql(role_csv_file, role_map):
     """
-    generate sql by role config csv file.
+    Generate sql by role config csv file.
 
-    args:
+    Args:
         role_csv_file -> str : role csv file absolute path
         role_map -> dict : a dict of role name and role code, just like {"管理员": "R0001", ...}
 
-    return:
+    Return:
         -> list : a list of all role config sql segments
     """
 
@@ -59,12 +56,12 @@ def generator_role_allocate_sql(role_csv_file, role_map):
 
 def generator_menu_allocate_sql(menu_csv_file):
     """
-    generate sql by role config csv file.
+    Generate sql by role config csv file.
 
-    args:
+    Args:
         menu_csv_file -> str : menu csv file absolute path
 
-    return:
+    Return:
         -> list : a list of all role config sql segments
     """
     menu_sql_list = []
@@ -88,7 +85,7 @@ def main():
 
         parser = argparse.ArgumentParser(description="need one or two csv files")
         parser.add_argument("role_csv", type=str, help="Usage: python role_allocate.py role.csv -m <menu_csv_file>")
-        parser.add_argument("--menu_csv", "-m", type=str, default=None, help="Usage: python role_allocate.py role.csv -m <menu_csv_file>")
+        parser.add_argument("--menu_csv", "-m", type=str, default=None, help="Usage: python role_allocate.py role_csv -m <menu_csv_file>")
         args = parser.parse_args()
 
         role_map = dict(DB.select("select rolename || ',' || roleid from ac_role"))
