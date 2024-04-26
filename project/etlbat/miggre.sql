@@ -22,24 +22,29 @@ GRANT CREATE SESSION TO new_user;
     b. 复制分区表重建分区;
 
     c. 重建其他对象（存储过程，函数，触发器，序列）;
-        索引： 可以查询 USER_INDEXES、ALL_INDEXES 或 DBA_INDEXES 视图来获取索引的信息，然后通过索引的名称从 USER_IND_COLUMNS、ALL_IND_COLUMNS 或 DBA_IND_COLUMNS 视图中获取索引列的信息。
-        SELECT DBMS_METADATA.GET_DDL('INDEX', index_name, owner) AS index_ddl
-        FROM all_indexes
-        WHERE owner = 'your_schema';
+        索引：
+        SELECT DBMS_METADATA.GET_DDL('INDEX', index_name) AS index_ddl FROM user_indexes;
 
-        触发器： 使用 USER_TRIGGERS、ALL_TRIGGERS 或 DBA_TRIGGERS 视图来获取触发器的信息，并使用 DBMS_METADATA.GET_DDL 函数来获取触发器的 DDL。
-        SELECT DBMS_METADATA.GET_DDL('TRIGGER', trigger_name, owner) AS trigger_ddl
-        FROM all_triggers
-        WHERE owner = 'your_schema';
+        触发器：
+        SELECT DBMS_METADATA.GET_DDL('TRIGGER', trigger_name) AS trigger_ddl FROM user_triggers;
 
-        函数和存储过程： 可以从 USER_PROCEDURES、ALL_PROCEDURES 或 DBA_PROCEDURES 视图中获取函数和存储过程的信息，并使用 DBMS_METADATA.GET_DDL 函数来获取其 DDL。
-        SELECT DBMS_METADATA.GET_DDL('FUNCTION', object_name, owner) AS function_ddl
-        FROM all_procedures
-        WHERE object_type = 'FUNCTION' AND owner = 'your_schema';
+        函数：
+        SELECT DBMS_METADATA.GET_DDL('FUNCTION', object_name) AS function_ddl FROM user_procedures
+        WHERE object_type = 'FUNCTION';
 
-        SELECT DBMS_METADATA.GET_DDL('PROCEDURE', object_name, owner) AS procedure_ddl
-        FROM all_procedures
-        WHERE object_type = 'PROCEDURE' AND owner = 'your_schema';
+        存储过程：
+        SELECT DBMS_METADATA.GET_DDL('PROCEDURE', object_name) AS procedure_ddl FROM user_procedures
+        WHERE object_type = 'PROCEDURE';
+
+        主键
+        SELECT 'ALTER TABLE ' || table_name || ' ADD CONSTRAINT ' || constraint_name || ' PRIMARY KEY (' || column_list || ');'
+        FROM user_constraints
+        WHERE constraint_type = 'P';
+
+        外键
+        SELECT 'ALTER TABLE ' || table_name || ' ADD CONSTRAINT ' || constraint_name || ' FOREIGN KEY (' || column_list || ') REFERENCES ' || r_table_name || ' (' || r_column_list || ');'
+        FROM user_constraints
+        WHERE constraint_type = 'R';
 
 
 
@@ -52,48 +57,6 @@ GRANT CREATE SESSION TO new_user;
       检查其他脚本中是否有路径写死的情况
 
     c.新调度文档配置，改成调用新部署的脚本
-
-
-
-
-
-
-
-索引：
-sql
-Copy code
-SELECT DBMS_METADATA.GET_DDL('INDEX', index_name) AS index_ddl
-FROM user_indexes;
-触发器：
-sql
-Copy code
-SELECT DBMS_METADATA.GET_DDL('TRIGGER', trigger_name) AS trigger_ddl
-FROM user_triggers;
-函数和存储过程：
-sql
-Copy code
-SELECT DBMS_METADATA.GET_DDL('FUNCTION', object_name) AS function_ddl
-FROM user_procedures
-WHERE object_type = 'FUNCTION';
-
-SELECT DBMS_METADATA.GET_DDL('PROCEDURE', object_name) AS procedure_ddl
-FROM user_procedures
-WHERE object_type = 'PROCEDURE';
-
-主键
-SELECT 'ALTER TABLE ' || table_name || ' ADD CONSTRAINT ' || constraint_name || ' PRIMARY KEY (' || column_list || ');'
-FROM user_constraints
-WHERE constraint_type = 'P';
-外键
-SELECT 'ALTER TABLE ' || table_name || ' ADD CONSTRAINT ' || constraint_name || ' FOREIGN KEY (' || column_list || ') REFERENCES ' || r_table_name || ' (' || r_column_list || ');'
-FROM user_constraints
-WHERE constraint_type = 'R';
-
-
-
-
-
-
 
 
 

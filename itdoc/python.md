@@ -10,13 +10,11 @@
 
 unicode序列：
 
-### python2：
 
 
 
 
 
-### python3：
 
 ---
 
@@ -28,9 +26,7 @@ unicode序列：
 
 
 
-以上两种方式都可以让顶层脚本使用正常，但是包里面的脚本就无法使用了，如果需要执行里面的脚本，将脚本的目录加入到sys.path（相对导包不可以）
-
-
+以上两种方式都可以让顶层脚本使用正常，但是包里面的脚本就无法使用了，如果需要执行包内部的脚本，将脚本的目录加入到sys.path（相对导包不可以）
 
 
 
@@ -56,11 +52,11 @@ from aa.aaf import test2    # 执行af.py不会报错，但是执行import了af.
 							# 这是因为test.py作为入口脚本的时候，执行目录为/test, 所以/test目录会被							  # 添加到sys.path，所以无法找到aa（test目录下面没有aa，但是有a），
     						# 为了test.py可以执行，
         					# 此处只需要改为from a.aa.aaf import test2 (以入口程序的目录为主
-            				# ，对待其他脚本的时候我们只需要记住入口程序的路径，根据入口程序的路径导包即								# 可)，但是此时单独执行af.py会报错，因为执行af.py的时候，sys.path路径又							  # 变成了/test/a, 此时为了两个脚本都能执行，需要在这里把/test目录加入到							    # sys.pth, 这样from a.aa.aaf import test2就可以找到包了
+            				# ，对待其他脚本的时候我们只需要记住入口程序的路径，根据入口程序的路径导包即								# 可)，但是此时单独执行af.py会报错，因为执行af.py的时候，sys.path路径又							  # 变成了/test/a, 此时为了两个脚本都能执行，需要在af.py里面把/test目录加					        # 入到sys.path, 这样from a.aa.aaf import test2就可以找到包了
                 
                 			# 如果改成from .aa.aaf import test2  执行test.py成功，执行af.py报错
                     		# 这是相对导包，是为了包内导包使用的， .表示当前包， ..表示父包
-                            # 相对导入保证了对内导包不会出错，被外使用的时候不会出错，应该是用来做一个被使用工具包使用的，但是单独执行就会报错
+                            # 相对导入保证了对内导包不会出错，被外使用的时候不会出错，但是单独执行就会报								# 错，应该是用来做一个被使用工具包使用的		
 def af_print():
     print("afffff")
 if __name__ == '__main__':
@@ -73,24 +69,22 @@ af_print()
 执行test.py 报错 ModuleNotFoundError: No module named 'aa'
 ```
 
+
+
 万能解决方案：
 
 将将项目的根路径添加到sys.path,其他都是用此路径然后使用绝对路径导包就可以了
 
-
-
-**在入口程序中将项目所在的根目录添加到sys.path中**
+为了包内模块可以单独使用（包内导包使用绝对路径），我们可以将入口程序中所在的目录添加到其sys.path中
 
 ```python
+# 被入口程序调用的包如果想要单独执行
 import sys
 import os
 
-# 将项目的根目录添加到sys.path中
+# 将入口程序的目录添加到sys.path中
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))    
 sys.path.append(BASE_DIR)
-
-# 导入包或模块
-from db.mysql.my_connect import connect
 ```
 
 
@@ -106,14 +100,15 @@ src/
 └── view/
     └── view.py
 
-# 1.相对导入
+# 1.相对导入（这里无法使用，想）
 from ..common import tool  # 报错
 # 相对导入只能在包内部使用，而不能在顶层脚本中使用。在这种情况下，view.py 是一个顶层脚本，因此无法使用相对导入来导入 common 目录中的 tool.py。需要将 view.py 转换为包中的模块，使其能够支持相对导入。
 
 # 在view目录下新增文件__init__.py，改写
-from src.common import tool  # 实测也不行
+from src.common import tool  # 实测也不行,
 
-# 相对导入在同级目录下可以使用
+
+
 
     
 # 2.绝对导入   
@@ -484,7 +479,7 @@ e# 如果 my_module.py 被导入到其他模块，__name__ 的值为 "my_module"
 
    >>> __name__
    '__main__'
-   
+
    ```
    
    ```
@@ -499,7 +494,7 @@ e# 如果 my_module.py 被导入到其他模块，__name__ 的值为 "my_module"
 
    >>> __name__
    '__main__'
-   
+
    ```
    
    ```
