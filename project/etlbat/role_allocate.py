@@ -76,42 +76,56 @@ def generator_menu_allocate_sql(menu_csv_file):
 
 
 def main():
-    global LOGGER, DB
     logging.basicConfig(level=logging.INFO, stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s')
-    LOGGER = logging.getLogger("role")
-    LOGGER.info("Begin.")
+    logging.info("Begin config role.")
     try:
-        DB = get_db_conn("/etc/conf/db.conf")
+        sit_db = get_db_conn("develop")
+        uat_db = get_db_conn("test")
 
         parser = argparse.ArgumentParser(description="need one or two csv files")
-        parser.add_argument("role_csv", type=str, help="Usage: python role_allocate.py role.csv -m <menu_csv_file>")
-        parser.add_argument("--menu_csv", "-m", type=str, default=None, help="Usage: python role_allocate.py role_csv -m <menu_csv_file>")
+        parser.add_argument("role_csv_file", type=str,
+                            help="Param error, Usage: python config_roles.py role_csv_file -m <menu_csv_file>")
+        parser.add_argument("--menu_csv_file", "-m", type=str, default=None, help="菜单表csv文件")
         args = parser.parse_args()
 
-        role_map = dict(DB.select("select rolename || ',' || roleid from ac_role"))
+        role_map_sit = dict(sit_db.select("select rolename || ',' || roleid from ac_role"))
+        role_map_uat = dict(uat_db.select("select rolename || ',' || roleid from ac_role"))
+        # 对比sit跟uat环境的ac_role表
+        # if role_map_sit != role_map_uat:
+        #     raise ValueError("The value of rolename and roleid in ac_role table are different between SIT environment and UAT environment.")
 
-        config_sql = "truncate table ac_operatorrole_c_app;\n"
-        config_sql += "\n".join(generator_role_allocate_sql(args.role_csv_file, role_map))
-        config_sql += "update ac_operatorrole_c_app d set func_rank=(select rn from (select t.*,t.rowid rid,row_number() over(partition by role,first_modu_id order by sec_modu_id) rn from ac_operatorrole_c_app t) s where  s.rid=d.rowid);\n"
-        LOGGER.info("Role csv file load success.")
-        LOGGER.info(config_sql)
+        logging.info("Load role config file: %s." % args.role_csv_file)
+        sql_list = ["truncate table ac_operatorrole_c_app;"]
+        sql_list += generator_role_allocate_sql(args.role_csv_file, role_map_sit)
+        sql_list.append(
+            "update ac_operatorrole_c_app d set func_rank=(select rn from (select t.*,t.rowid rid,row_number() over(partition by role,first_modu_id order by sec_modu_id) rn from ac_operatorrole_c_app t) s where  s.rid=d.rowid);")
 
         if args.menu_csv_file:
-            config_sql += "truncate table AC_MENU_TREE_APP;\n"
-            config_sql += "\n".join(generator_menu_allocate_sql(args.menu_csv_file))
-            LOGGER.info("Menu csv file load success.")
-        config_sql += "commit;\n"
+            logging.info("Load menu config file: %s." % args.menu_csv_file)
+            sql_list.append("truncate table AC_MENU_TREE_APP;")
+            sql_list += generator_menu_allocate_sql(args.menu_csv_file)
+        logging.info("All csv file load success.")
 
-        with codecs.open("role.sql", 'w', encoding='utf-8', errors='ignore') as sql_file:
-            sql_file.write(config_sql)
-        LOGGER.info("Created role.sql file success.")
+        sql_list.append("commit;")
+        sql_str = "\n".join(sql_list)
 
-        DB.execute_file("role.sql")
-        LOGGER.info("Execute role.sql file success.")
-        LOGGER.info("End")
+        # GBK 文件
+        logging.info("Creating allocate_role.sql file.")
+        with open("allocate_role.sql", "w") as sql_file:
+            sql_file.write(sql_str)
+
+        sit_db.execute_sql_file("allocate_role.sql")
+        logging.info("Execute allocate_role.sql success in the SIT environment.")
+        uat_db.execute_sql_file("role.sql")
+        logging.info("Execute allocate_role.sql success in the UAT environment.")
+        logging.info("Done.")
 
     except Exception as err:
-        LOGGER.error(err)
+        logging.error(err)
+
+
+if __name__ == '__main__':
+    main()
 
 
 if __name__ == '__main__':
