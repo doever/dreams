@@ -13,7 +13,6 @@
 
 import os
 import re
-import sys
 import base64
 import subprocess
 
@@ -30,14 +29,13 @@ class OraDB:
         # cmd = "sqlplus -S %s @%s" % (self.conn_str, sql_file)
         output = execute_command(cmd)
         if re.search("ORA-", output, re.IGNORECASE) or re.search("SP2-", output, re.IGNORECASE):
-            raise ValueError("Select statement error \n%splease check sql syntax.\n%s" % (output, sql))
+            raise ValueError("Select statement error \n%splease check sql syntax.\n%s" % (output, sql_file))
 
     def select(self, sql):
         sqlplus_format_di = {
             "serveroutput": "on",
             "feedback": "off",
             "heading": "off",
-            "feedback": "off",
             "echo": "off",
             "verify": "off",
             "trimspool": "on",
@@ -66,13 +64,13 @@ class OraDB:
 
 def get_db_conn(db_type):
     if db_type.lower() == "develop":
-        conf_file = "/cimcim/conf/db.conf"
+        conf_file = "/etc/conf/db.conf"
     elif db_type.lower() == "test":
-        conf_file = "/cimcim/cl/tools/common/db_uat.conf"
+        conf_file = "/etc/cl/tools/common/db_test.conf"
     elif db_type.lower() == "pp":
-        conf_file = "/cimcim/cl/tools/common/db_pp.conf"
+        conf_file = "/etc/cl/tools/common/db_pp.conf"
     else:
-        raise ValueError("Unknow params : %s, use sit or uat or pp" % db_type)
+        raise ValueError("Unknown params : %s, use sit or uat or pp" % db_type)
 
     if not os.path.isfile(conf_file):
         raise FileNotFoundError("no such files : %s" % conf_file)
@@ -81,9 +79,9 @@ def get_db_conn(db_type):
     with open(conf_file, "r") as cf:
         conf_str = cf.read()
         try:
-            db_user = base64.b64decode(re.findall('dbuser=(.+?)\n', conf_str)[0]).strip()
-            db_pass = base64.b64decode(re.findall('dbpass=(.+?)\n', conf_str)[0]).strip()
-            db_sid = base64.b64decode(re.findall('dbhost=(.+?)\n', conf_str)[0]).strip()
+            db_user = base64.b64decode(re.findall('user=(.+?)\n', conf_str)[0]).strip()
+            db_pass = base64.b64decode(re.findall('pass=(.+?)\n', conf_str)[0]).strip()
+            db_sid = base64.b64decode(re.findall('host=(.+?)\n', conf_str)[0]).strip()
         except IndexError as err:
             raise ValueError("No such column name dbuser or dbpass or dbhost!")
         else:

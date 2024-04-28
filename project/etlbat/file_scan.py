@@ -60,7 +60,7 @@ class OraDB:
         self.sid = sid
         self.conn_str = self.user + "/" + self.password + "@" + self.sid
 
-    def select(self, sql):
+    def select(self, sql) -> list:
         sqlplus_format_di = {
             "serveroutput": "on",
             "feedback": "off",
@@ -82,7 +82,7 @@ class OraDB:
         results = [i.strip().split(",") for i in output.strip().split("\n") if output.strip()]
         return results
 
-    def update(self, sql):
+    def update(self, sql) -> str:
         cmd = "sqlplus -S %s <<EOF\n%s;\ncommit;\nquit\nEOF" % (self.conn_str, sql)
         output = execute_commands(cmd)
         if re.search("ORA-", output, re.IGNORECASE) or re.search("SP2-", output, re.IGNORECASE):
@@ -167,7 +167,7 @@ def client():
         while etl_jobs:
             # 实时读取ETL JOB配置
             etl_jobs = DB.select("select sys_id||','|| etljob||','|| datapath||','|| c_label||','|| suffixformat||','|| to_char(C_DATE,'YYYYMMDD')||','|| to_char(C_DATE,'YYYY-MM-DD') from LOAD_TABLE_INFO WHERE c_valid ='1' and flow_name='%s' and c_date=to_date('%s','YYYYMMDD')-1" % (flow_name, work_dt))
-            LOGGER.info("Ready to load etl jobs: (work_dt:%s):\n" % work_dt + "\n".join([i[1] for i in etl_jobs]))
+            LOGGER.info("Ready to load etl jobs: (work_dt:%s):\n" % work_dt + "\n".join([row[1] for row in etl_jobs]))
             for sys_id, etl_job, data_path, c_label, suffixformat, c_date1, c_date2 in etl_jobs:
                 # 判断flg文件跟数据文件是否都存在
                 if os.path.isfile(
@@ -185,14 +185,11 @@ def client():
                     response_data = response.json().get("data") if response.json().get("data") else {}
                     job_status = response_data.get("status").upper() if response_data.get("status") else ""
 
-                    if code == "FAILURE":  # 任务未运行
-                        res = requests.post(
-                            "%s://%s:%s%s" % (PROXY, SCHEDULE_HOST_IP, SCHEDULE_HOST_PORT, EXECUTE_JOB_URL),
-                            data=js_data, headers=REQUEST_HEAD)
+                    if code == "NotRunning":  # 任务未运行
+                        res = requests.post("%s://%s:%s%s" % (PROXY, SCHEDULE_HOST_IP, SCHEDULE_HOST_PORT, EXECUTE_JOB_URL), data=js_data, headers=REQUEST_HEAD)
                         LOGGER.info("Start etl load job %s." % etl_job)
                     elif code == "OK" and job_status == "SUCCESS":  # 任务运行成功
-                        DB.update("update load_table_info set c_date=to_date('%s', 'YYYYMMDD') where etljob='%s'" % (
-                        work_dt, etl_job))
+                        DB.update("update load_table_info set c_date=to_date('%s', 'YYYYMMDD') where etljob='%s'" % (work_dt, etl_job))
                         LOGGER.info("%s load success, switch next day." % etl_job)
                     else:
                         pass
