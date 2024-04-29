@@ -12,9 +12,14 @@
 
 
 def decor(func):
-    def wrapper(name):
+    def wrapper(*agrs, **kwargs):
         print("装饰器执行了...")
-        return func(name)
+        print(agrs)
+        for i in agrs:
+            print(111111111)
+            print(i)
+            print(111111111)
+        return func(*agrs, **kwargs)
     return wrapper
 
 
@@ -40,9 +45,9 @@ class B(A):
         int : count of word
     """
     @decor
-    def print_log(self):
-        print('hello B')
-        super()._inside()
+    def print_log(self, name):
+        print('hello %s' % name)
+        # super()._inside()
 
 
 def count_word(word):
@@ -60,4 +65,4 @@ def count_word(word):
 
 if __name__ == '__main__':
     # A().print_log()
-    B().print_log()
+    B().print_log("world")

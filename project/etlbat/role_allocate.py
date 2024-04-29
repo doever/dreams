@@ -91,8 +91,8 @@ def main():
         role_map_sit = dict(sit_db.select("select rolename || ',' || roleid from ac_role"))
         role_map_uat = dict(uat_db.select("select rolename || ',' || roleid from ac_role"))
         # 对比sit跟uat环境的ac_role表
-        # if role_map_sit != role_map_uat:
-        #     raise ValueError("The value of rolename and roleid in ac_role table are different between SIT environment and UAT environment.")
+        if role_map_sit != role_map_uat:
+            raise ValueError("The value of role_name and role_id in ac_role table are different between SIT environment and UAT environment.")
 
         logging.info("Load role config file: %s." % args.role_csv_file)
         sql_list = ["truncate table ac_operatorrole_c_app;"]
@@ -122,10 +122,6 @@ def main():
 
     except Exception as err:
         logging.error(err)
-
-
-if __name__ == '__main__':
-    main()
 
 
 if __name__ == '__main__':
