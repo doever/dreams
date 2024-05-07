@@ -13,6 +13,7 @@
 
 
 import os
+import re
 import sys
 import csv
 import codecs
@@ -40,16 +41,19 @@ def generator_role_allocate_sql(role_csv_file, role_map):
 
     with open(role_csv_file, "r") as f_csv:
         reader = csv.reader(f_csv)
-        first_row = next(reader)
+        role_names = next(reader)
+        role_ids = next(reader)
+        
         # 有效的角色名称跟角色代码的二维数组
-        valid_role_list = [(role_name, role_map[role_name]) for role_name in first_row if role_name in role_map.keys()]
-        value_of_role_list = (row for row in reader)
+        # valid_role_list = [(role_name, role_map[role_name]) for role_name in role_names if role_name in role_map.keys()]
+        valid_role_list = [(role_name, role_id) for role_name, role_id in zip(role_names, role_ids) if role_name in role_map.keys()]
+        csv_list = [row for row in reader]
 
-    for role_name, role_code in valid_role_list:
-        index = first_row.index(role_name)              # 角色名称在原文件中的位置（列号）
-        for row in value_of_role_list:
-            if row[index]:                              # 角色是否配置了权限
-                role_sql_list.append("insert into operatorrole values (sys_guid(), '%s', '%s', '%s', '%s', '%s', '1');" % (role_code, row[0], row[1], row[2], row[3]))
+    for role_name, role_id in valid_role_list:
+        index = role_names.index(role_name)              # 角色名称在原文件中的位置（列号）
+        for row in csv_list:
+            if row[index]:                               # 角色是否配置了权限
+                role_sql_list.append("insert into operatorrole values (sys_guid(), '%s', '%s', '%s', '%s', '%s', '1');" % (role_id, row[0], row[1], row[2], row[3]))
 
     return role_sql_list
 
