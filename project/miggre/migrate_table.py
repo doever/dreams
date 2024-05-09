@@ -137,8 +137,8 @@ def main():
 
     pool = Pool(processes=10)
     pool.map_async(migrate, tables)
-    pool.join()
     pool.close()
+    pool.join()
 
 
 
