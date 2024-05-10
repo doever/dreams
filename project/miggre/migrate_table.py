@@ -12,11 +12,14 @@
 
 import os
 import re
+import sys
 import csv
-import base64
+import logging
 import subprocess
 
 from multiprocessing import Pool
+from datetime import datetime, timedelta
+
 
 class OraDB:
     def __init__(self, user, password, sid):
@@ -121,24 +124,64 @@ def execute_command(commands):
         return output
 
 
-def migrate(table_info):
-    table_name, is_partition = table_info
-    db.insert("create table %s as select * from %s" % (table_name+'_bak', table_name))
+def migrate(row):
+    table_name, is_partition, partition_column, is_migrate, object_type, size = row
+    try:
+        new_db.drop("drop table %s" % table_name)
+        logging.info("drop table %s" % table_name)
+    except ValueError as err:
+        pass
+
+    if is_partition:
+        start_date = datetime.strptime(work_dt, "%Y%m%d")
+        sqls = ["create table %s nologging parallel(degree 4) partition by range (%s)" % (table_name, partition_column),
+                "("]
+        for i in range(30):
+            partition_name = "P" + (start_date + timedelta(days=i)).strftime("%Y%m%d")
+            partition_limit_dt = (start_date + timedelta(days=i + 1)).strftime("%Y-%m-%d")
+            sqls.append(
+                "partition %s values less than (to_date('%s', 'YYYY-MM-DD'))," % (partition_name, partition_limit_dt))
+
+        sqls.append("partition P20241231 values less than (to_date('2025-01-01', 'YYYY-MM-DD'))\n)")
+        sqls.append("as select * from crm.%s where %s in (to_date('%s', 'YYYY-MM-DD'))" % (
+        table_name, partition_column, start_date.strftime("%Y-%m-%d")))
+        sql = '\n'.join(sqls)
+
+    else:
+        condition = "1=2" if is_migrate else "1=1"
+        if re.search("\d", is_migrate):
+            condition = partition_column + ">=to_date('%s', 'YYYY-MM-DD')" % (
+                        datetime.strptime(work_dt, "%Y%m%d") - timedelta(days=int(is_migrate) - 1)).strftime("%Y-%m-%d")
+
+        sql = "create table %s nologging parallel(degree 4) as select * from crm.%s where %s" % (
+        table_name, table_name, condition)
+
+    logging.info("begin create %s" % table_name)
+    try:
+        new_db.create(sql)
+        logging.info(sql)
+    except Exception as err:
+        logging.error(err)
+        logging.error("copy %s occur a mistake." % table_name)
 
 
-def main():
-    global db
-    factory = OraDBSimpleFactory()
-    db = factory.create_db_object('uat')
-    with open("all_tables.csv", "r") as f_csv:
-        reader = csv.reader(f_csv)
-        next(reader)
-        tables = [(row[1], row[2]) for row in reader]
+factory = OraDBSimpleFactory()
+old_db = factory.create_db_object('/cimcim/cl/tools/common/db_sit.conf')
+new_db = factory.create_db_object('/cimcim/cl/tools/common/db_sit_new.conf')
+logging.basicConfig(level=logging.INFO, filename="migrate_table.log", format='%(asctime)s - %(levelname)s - %(message)s')
+work_dt = sys.argv[1]
 
-    pool = Pool(processes=10)
-    pool.map_async(migrate, tables)
-    pool.close()
-    pool.join()
+with open("all_tables.csv", "r") as f_csv:
+    reader = csv.reader(f_csv)
+    head = next(reader)
+    tables = [row for row in reader]
+print(len(tables))
+
+logging.info("migrate tables.")
+pool = Pool(processes=10)
+pool.map_async(migrate, tables)
+pool.close()
+pool.join()
 
 
 
