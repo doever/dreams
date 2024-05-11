@@ -183,5 +183,3 @@ pool.map_async(migrate, tables)
 pool.close()
 pool.join()
 
-
-
