@@ -83,6 +83,7 @@ def count_lines(filename):
     """计算文件行数"""
     if not os.path.isfile(filename):
         LOGGER.error("no such file <%s>, count lines failed." % filename)
+        # raise FileNotFoundError("no such file <%s>, count lines" % filename)
         exit(-4)
     output = run_cmd(["wc -l %s" % filename])
     line_count = int(output.split()[0])
@@ -303,7 +304,7 @@ def main():
     LOGGER = logging.getLogger("Compare")
     LOGGER.info("begin compare...")
 
-    # 判断文件是否存在
+    # 判断两个文件是否存在
     if not os.path.isfile(file_a) or not os.path.isfile(file_b):
         LOGGER.error("no such files <%s> or <%s>" % (file_a, file_b))
         exit(-1)
@@ -321,10 +322,10 @@ def main():
         compare_file.set_compare_strategy(UnSortSmallFileCompare())
     elif random_compare:       # 抽样对比，取文件的前1000行
         compare_file.set_compare_strategy(UnSortLargeFileRandomCompare())
-    else:
+    else:                      # 全量对比
         compare_file.set_compare_strategy(UnSortLargeFileAllCompare())
 
-    # 开始比较
+    # 比较文件
     compare_file.compare(file_a, file_b, mismatch_file)
 
     # 将比较结果记录到mismatch文件中
