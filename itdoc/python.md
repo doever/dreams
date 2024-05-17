@@ -730,7 +730,7 @@ print("Result with dictionary unpacking:", result)
 
 下面是一个简单的 Python 示例，演示了闭包的概念：
 
-```
+```python
 def outer_function(x):
     # 内部函数是嵌套在外部函数内部的
     def inner_function(y):
