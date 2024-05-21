@@ -30,13 +30,14 @@ sqlload()
     echo "LOAD command :$ORACLE_HOME/bin/sqlldr userid=***** control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename  multithreading=true errors=0 direct=y"
     $ORACLE_HOME/bin/sqlldr userid=$strConn control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename multithreading=true errors=0 direct=y  >/dev/null
     fi
-
+    echo "11111" >> a.log
     if [ -e "${badfilename}" ];then
         echo -e "\033[33mload failed,please read ${badfilename} and ${logfilename}\033[0m"
         exec_result=3
         run_log
         exit 3
-fi
+    fi
+
     if [ $? -ne 0 ];then
         echo -e "\033[33msqlldr failed,please check the sqlldr command!\033[0m"
         exec_result=2
@@ -45,6 +46,8 @@ fi
     else
         echo -e "\033[33m###### load ${datafile} to table ${targettable} done! more info in ${logfilename}\033[0m"
     fi
+
+    echo "22222" >> a.log
 }
 GetTime()
 {
