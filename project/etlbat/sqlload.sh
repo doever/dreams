@@ -24,11 +24,11 @@ sqlload()
 
     if [[ `cat $ctlfilename | grep "char(20000)"` || `cat $ctlfilename | grep "char(200000)"` ]] > /dev/null
     then
-    echo "LOAD command :$ORACLE_HOME/bin/sqlldr userid=***** control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename rows=100000 bindsize=104857600 errors=0"
-    $ORACLE_HOME/bin/sqlldr userid=$strConn control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename rows=100000 readsize=104857600 bindsize=104857600 errors=0 parallel=true >/dev/null
+      echo "LOAD command :$ORACLE_HOME/bin/sqlldr userid=***** control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename rows=100000 bindsize=104857600 errors=0"
+      $ORACLE_HOME/bin/sqlldr userid=$strConn control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename rows=100000 readsize=104857600 bindsize=104857600 errors=0 parallel=true >/dev/null
     else
-    echo "LOAD command :$ORACLE_HOME/bin/sqlldr userid=***** control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename  multithreading=true errors=0 direct=y"
-    $ORACLE_HOME/bin/sqlldr userid=$strConn control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename multithreading=true errors=0 direct=y  >/dev/null
+      echo "LOAD command :$ORACLE_HOME/bin/sqlldr userid=***** control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename  multithreading=true errors=0 direct=y"
+      $ORACLE_HOME/bin/sqlldr userid=$strConn control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename multithreading=true errors=0 direct=y  >/dev/null
     fi
     echo "11111" >> a.log
     if [ -e "${badfilename}" ];then
