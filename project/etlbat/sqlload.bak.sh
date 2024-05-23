@@ -1,25 +1,8 @@
 #!/bin/sh
-
-# Debug
-debug_log(){
-    local message=$1
-    local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
-    echo "${timestamp} [debug] ${message}" >> ${DebugLog}
-}
-
-handle_interrupt(){
-    interruptlogfile="/etl/dwexp/log/debug.interruptlog"
-    env >> ${interruptlogfile}
-    top -b -n1 | grep "Cpu" >> ${interruptlogfile}
-    top -b -n1 | grep "Mem" >> ${interruptlogfile}
-    debug_log "program exit unexpect."
-    exit 998
-}
-
 showhelp()
 {
-    echo "usage: sh `basename $0` [-a 'sourcefile'] [-b 'format'] [-t 'targettable'] [-d 'workdt'] [-f 'path']"
-    echo "mevery param can not empty,please check!"
+    echo -e "\033[32musage: sh `basename $0` [-a 'sourcefile'] [-b 'format'] [-t 'targettable'] [-d 'workdt'] [-f 'path']\033[0m"
+    echo -e "\033[31mevery param can not empty,please check!\033[0m"
 }
 
 checkvalue()
@@ -38,29 +21,33 @@ sqlload()
         mkdir /etl/dwexp/log/${workdt}
         chmod -R 777 /etl/dwexp/log/${workdt}
     fi
-    debug_log "begin function sqlload."
 
     if [[ `cat $ctlfilename | grep "char(20000)"` || `cat $ctlfilename | grep "char(200000)"` ]] > /dev/null
     then
-    debug_log "load big column files."
-    echo "LOAD command :$ORACLE_HOME/bin/sqlldr userid=***** control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename rows=100000 readsize=104857600 bindsize=104857600 errors=0 parallel=true" >> ${DebugLog}
-    $ORACLE_HOME/bin/sqlldr userid=$strConn control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename rows=100000 readsize=104857600 bindsize=104857600 errors=0 parallel=true >> ${DebugLog} 2>&1
+      echo "LOAD command :$ORACLE_HOME/bin/sqlldr userid=***** control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename rows=100000 bindsize=104857600 errors=0"
+      $ORACLE_HOME/bin/sqlldr userid=$strConn control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename rows=100000 readsize=104857600 bindsize=104857600 errors=0 parallel=true >/dev/null
     else
-    debug_log "load small column files."
-    echo "LOAD command :$ORACLE_HOME/bin/sqlldr userid=***** control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename  multithreading=true errors=0 direct=y" >> ${DebugLog}
-    $ORACLE_HOME/bin/sqlldr userid=$strConn control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename multithreading=true errors=0 direct=y  >> ${DebugLog}  2>&1
-
-    debug_log "end sqlload command."
-
+      echo "LOAD command :$ORACLE_HOME/bin/sqlldr userid=***** control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename  multithreading=true errors=0 direct=y"
+      $ORACLE_HOME/bin/sqlldr userid=$strConn control=$ctlfilename data=$datafile log=$logfilename bad=$badfilename multithreading=true errors=0 direct=y  >/dev/null
+    fi
+    echo "11111" >> a.log
     if [ -e "${badfilename}" ];then
-        echo "load failed,please read ${badfilename} and ${logfilename}"
+        echo -e "\033[33mload failed,please read ${badfilename} and ${logfilename}\033[0m"
         exec_result=3
         run_log
         exit 3
     fi
 
+    if [ $? -ne 0 ];then
+        echo -e "\033[33msqlldr failed,please check the sqlldr command!\033[0m"
+        exec_result=2
+        run_log
+        exit 2
+    else
+        echo -e "\033[33m###### load ${datafile} to table ${targettable} done! more info in ${logfilename}\033[0m"
+    fi
 
-    debug_log "end function sqlload."
+    echo "22222" >> a.log
 }
 GetTime()
 {
@@ -81,23 +68,14 @@ DiffTime=$((Edtime-Bgtime))
 sql="insert into F_CM_SQLLOAD_LOG_INFO(file_name, target_table, work_dt, exec_result, beg_date, end_date, run_time, para1, para2, para3)"
 sql1="select '"${sourcefile}.${format}"','"${targettable}"',"${workdt},${exec_result}",to_date('"`date -d @${Bgtime} +"%Y-%m-%d %H:%M:%S"`"','YYYY-MM-DD hh24:mi:ss'),to_date('"`date -d @${Edtime} +"%Y-%m-%d %H:%M:%S"`"','YYYY-MM-DD hh24:mi:ss'),'"`GetTime $DiffTime`"','"${linelog}"',null,null from dual;"
 sql2="COMMIT;"
-# sqlplus -S ${strConn} <<-!!! >/dev/null
-# set serveroutput on;
-# $sql
-# $sql1
-# $sql2
-# !!!
-
-# Debug
-echo ${sql} >> ${DebugLog}
-echo ${sql1} >> ${DebugLog}
-echo ${sql2} >> ${DebugLog}
-
+sqlplus -S ${strConn} <<-!!! >/dev/null
+set serveroutput on;
+$sql
+$sql1
+$sql2
+!!!
 }
 
-
-trap 'handle_interrupt' INT TERM HUP QUIT
-info_a="begin.."
 
 Bgtime=$(date +%s)
 for line in `cat /cimcim/conf/db.conf`
@@ -115,9 +93,6 @@ dbhost=`echo $dbhost | openssl base64 -d`
 
 strConn=$dbuser/$dbpass@$dbhost
 
-info_b="parse db option."
-
-
 while getopts 'a:b:t:d:f:' OPT; do
     case $OPT in
         a|+a)sourcefile="$OPTARG";;
@@ -132,24 +107,10 @@ while getopts 'a:b:t:d:f:' OPT; do
     esac
 done
 
-info_c="parse user options."
-
-# Debug
-DebugLog=/etl/dwexp/log/${workdt}/${sourcefile}_${workdt}.debuglog
-env > ${DebugLog}
-top -b -n1 | grep "Cpu" >> ${DebugLog}
-top -b -n1 | grep "Mem" >> ${DebugLog}
-
-debug_log $info_a
-debug_log $info_b
-debug_log $info_c
-debug_log "load ${sourcefile} to ${targettable}"
-
 linelog="107_$?"
 exec_result=107
 run_log
 
-debug_log "check value."
 checkvalue
 
 ctlfilename=/cimcim/script/ctl/${targettable}.ctl
@@ -167,11 +128,10 @@ case $path in
         datafile=/etl/dwexp/crm/T24/tmp/${sourcefile}.${format}
         ;;
     *)  exec_result=4
-        run_log
+
+run_log
         exit 4
 esac
-
-debug_log "join the data file path."
 
 if [ ! -f $datafile ];then
     exec_result=5
@@ -179,30 +139,20 @@ if [ ! -f $datafile ];then
     exit 5
 fi
 
-debug_log "check data file is exists"
-
 if [ -e $logfilename ];then
     rm -f $logfilename
 fi
-
-debug_log "remove log file."
 
 if [ -e $badfilename ];then
     rm -f $badfilename
 fi
 
-debug_log "remove bad file."
-
 linelog="146_$?"
 exec_result=146
 run_log
-
-debug_log "begin sqlload script."
 
 sqlload
 
 linelog="152_$?"
 exec_result=0
 run_log
-
-debug_log "end sqlload script"
