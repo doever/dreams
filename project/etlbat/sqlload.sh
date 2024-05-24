@@ -81,12 +81,12 @@ DiffTime=$((Edtime-Bgtime))
 sql="insert into F_CM_SQLLOAD_LOG_INFO(file_name, target_table, work_dt, exec_result, beg_date, end_date, run_time, para1, para2, para3)"
 sql1="select '"${sourcefile}.${format}"','"${targettable}"',"${workdt},${exec_result}",to_date('"`date -d @${Bgtime} +"%Y-%m-%d %H:%M:%S"`"','YYYY-MM-DD hh24:mi:ss'),to_date('"`date -d @${Edtime} +"%Y-%m-%d %H:%M:%S"`"','YYYY-MM-DD hh24:mi:ss'),'"`GetTime $DiffTime`"','"${linelog}"',null,null from dual;"
 sql2="COMMIT;"
-# sqlplus -S ${strConn} <<-!!! >/dev/null
-# set serveroutput on;
-# $sql
-# $sql1
-# $sql2
-# !!!
+ sqlplus -S ${strConn} <<-!!! >/dev/null
+ set serveroutput on;
+ $sql
+ $sql1
+ $sql2
+ !!!
 
 # Debug
 echo ${sql} >> ${DebugLog}

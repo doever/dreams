@@ -94,7 +94,7 @@ if __name__ == "__main__":
         ("/ds/CRM_31083_yyyymmdd_00001.txt", "/sh/CRM_31083_yyyymmdd_00001.txt"),
         ("/ds/CRM_31182_yyyymmdd_00001.txt", "/sh/CRM_31182_yyyymmdd_00001.txt"),
         ("/ds/CRM_31283_yyyymmdd_00001.txt", "/sh/CRM_31283_yyyymmdd_00001.txt"),
-        ("/ds/CRM_31382_yyyymmdd_00001.txt", "/sh/CRM_31382_yyyymmdd_00001.txt"),
+        ("/ds/CRM_31382_yyyymmdd_00001.txt", "/sh/CRM_31382_yyyymmdd_00001.txt")
     ]
     main(compare_files_li)
 
