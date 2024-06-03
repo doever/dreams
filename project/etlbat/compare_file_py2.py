@@ -272,7 +272,7 @@ def check_result(clean_file, file_b, mismatch_file):
     first_line_li = [col.strip() for col in re.split('@[!|\|]@', first_mismatch_line) if col]
 
     pattern = '.*'.join(first_line_li[:2]) if len(first_line_li) <= 4 else '.*'.join(first_line_li[:5])
-    capture_line_in_file_b = run_cmd(["grep %s %s | head -1" % (pattern, file_b)])
+    capture_line_in_file_b = run_cmd(['grep "%s" %s | head -1' % (pattern, file_b)])
 
     return {
         "clean_file_rows": clean_file_lines,
