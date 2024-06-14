@@ -44,8 +44,8 @@ def handle_result(etl_job):
 
 async def main():
     print('start...')
-    file1_path = 'file_a.txt'
-    file2_path = 'file_b.txt'
+    file1_path = '../compare/file_a.txt'
+    file2_path = '../compare/file_b.txt'
     await async_operation(handle_result)
     print('end...')
 

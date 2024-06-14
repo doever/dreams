@@ -21,8 +21,10 @@ import logging
 import requests
 from datetime import datetime, timedelta
 
-from start_file_scan import PROXY, SCHEDULE_HOST_IP, SCHEDULE_HOST_PORT, QUERY_JOB_URL, EXECUTE_JOB_URL, GET_JOB_URL, REQUEST_HEAD, LOG_BASE_PATH, SLEEP_TIME
 
+sys.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from common.db import *
 
 # 接收用户参数
 if len(sys.argv) <= 2:
