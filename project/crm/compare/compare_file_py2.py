@@ -283,66 +283,98 @@ def check_result(clean_file, file_b, mismatch_file):
     }
 
 
+def record_summar_log(begin_date, file_a, size_a, count_a, file_b, count_b, size_b, result, mismatch_rows, compare_method, error_info):
+
+    summar_log= os.path.join(BASE_PATH + "compare summar.log")
+    end_date = datetime.now().strftime('    %H:%M:%S')
+
+    file_a =' ' + file_a + ' ' + (90-len(file_a)) * ' '
+    file_b =' ' + file_b + ' ' + (90-len(file_b)) * ' '
+
+    beautify_format = lambda x: ' ' + str(x) + (15-len(str(x))) * ' '
+    r= map(beautify_format, [begin_date, end_date, size_a, count_a, size_b, count_b, result, mismatch_rows, compare_method])
+    r.append(file_a)
+    r.append(file_b)
+    r.append(error_info)
+    with open(summar log, 'a') as log:
+        log.write(''.join(r) + '\n')
+
+
 def main():
     # 创建目录, 存放脚本生成的文件
     global BASE_PATH, LOGGER
     BASE_PATH = "/etl/dwexp/crm/log"
     run_cmd(["mkdir -p %s" % (os.path.join(BASE_PATH, 'compare'))])
+    begin_date = datetime.now().strftime('%Y-%m-%d    %H:%M:%S')
 
-    # 接收用户参数
-    if len(sys.argv) <= 2:
-        print("Parameter error, Usage: python compare_file.py <file_a_path> <file_b_path>")
-        raise ValueError("Parameter error, Usage: python compare_file.py <file_a_path> <file_b_path>")
-    file_a = sys.argv[1]
-    file_b = sys.argv[2]
-    mismatch_file = file_a + ".mismatch.txt"
-    random_compare = True
+    try:
+        # 接收用户参数
+        if len(sys.argv) <= 2:
+            print("Parameter error, Usage: python compare_file.py <file_a_path> <file_b_path>")
+            raise ValueError("Parameter error, Usage: python compare_file.py <file_a_path> <file_b_path>")
+        file_a = sys.argv[1]
+        file_b = sys.argv[2]
+        mismatch_file = file_a + ".mismatch.txt"
+        random_compare = True
 
-    # 定义日志对象
-    log_file = file_a + ".run.log"
-    logging.basicConfig(level=logging.INFO, filename=log_file, format='%(asctime)s - %(levelname)s - %(message)s')
-    LOGGER = logging.getLogger("Compare")
-    LOGGER.info("begin compare...")
+        # 定义日志对象
+        log_file = file_a + ".run.log"
+        logging.basicConfig(level=logging.INFO, filename=log_file, format='%(asctime)s - %(levelname)s - %(message)s')
+        LOGGER = logging.getLogger("Compare")
+        LOGGER.info("begin compare...")
 
-    # 判断两个文件是否存在
-    if not os.path.isfile(file_a) or not os.path.isfile(file_b):
-        LOGGER.error("no such files <%s> or <%s>" % (file_a, file_b))
-        exit(-1)
+        # 判断两个文件是否存在
+        if not os.path.isfile(file_a) or not os.path.isfile(file_b):
+            info = "no such files <%s> or <%s>" % (file_a, file_b)
+            LOGGER.error(info)
+            record_summar_log(begin_date, file_a, '-', '-', file_b,'-', '-','FAIL', '-', '-', info.replace('\n', ''))
+            exit(-1)
 
-    # 判断两个文件的行数是否一致
-    count_a = count_lines(file_a)
-    count_b = count_lines(file_b)
-    if count_a != count_b:
-        LOGGER.error("The number of lines in two files is not equal\n%s=%s\n%s=%s" % (file_a, count_a, file_b, count_b))
-        exit(-2)
+        # 判断两个文件的行数是否一致
+        size_a = os.path.getsize(file_a)
+        size_b = os.path.getsize(file_b)
+        count_a = count_lines(file_a)
+        count_b = count_lines(file_b)
+        if size_a == 0 or size_b == 0:
+            LOGGER.error("FileSize is 0, %s size is %s, %s size is %s" % (file_a, size_a, file_b, size_b))
+            record_summar_log(begin_date, file_a, size_a, count_a, file_b, size_b, count_b, 'FAIL', '-', '-', 'SizeZero')
+            exit(-2)
 
-    # 选择对比策略
-    compare_file = CompareFile()
-    if count_a <= 30 * 10000:  # 全文本对比，集合加减
-        compare_file.set_compare_strategy(UnSortSmallFileCompare())
-    elif random_compare:       # 抽样对比，取文件的前1000行
-        compare_file.set_compare_strategy(UnSortLargeFileRandomCompare())
-    else:                      # 全量对比
-        compare_file.set_compare_strategy(UnSortLargeFileAllCompare())
+        if count_a != count_b:
+            LOGGER.error("The number of lines in two files is not equal\n%s=%s\n%s=%s" % (file_a, count_a, file_b, count_b))
+            record_summar_log(begin_date, file_a, size_a, count_a, file_b, size_b, count_b, 'FAIL', '-', '-', 'CountNotEqual')
+            exit(-2)
 
-    # 比较文件
-    compare_file.compare(file_a, file_b, mismatch_file)
+        # 选择对比策略
+        compare_file = CompareFile()
+        if count_a <= 30 * 10000:  # 全文本对比，集合加减
+            compare_file.set_compare_strategy(UnSortSmallFileCompare())
+        elif random_compare:       # 抽样对比，取文件的前1000行
+            compare_file.set_compare_strategy(UnSortLargeFileRandomCompare())
+        else:                      # 全量对比
+            compare_file.set_compare_strategy(UnSortLargeFileAllCompare())
 
-    # 将比较结果记录到mismatch文件中
-    result_di = check_result(file_a + '.clean.txt', file_b, mismatch_file)
-    with open(mismatch_file, 'a') as f_mismatch_file:
-        for k, v in result_di.items():
-            f_mismatch_file.write("\n%s: %s" % (k, v))
+        # 比较文件
+        compare_file.compare(file_a, file_b, mismatch_file)
 
-    # 移动生成的清洗文件，mismatch文件，日志文件到/etl/dwexp/crm/log/compare, 如果文件已存在就不覆盖
-    for source_file in [mismatch_file, log_file, file_a + '.clean.txt']:
-        file_name = os.path.split(source_file)[-1]
-        target_dir = os.path.join(BASE_PATH, "compare")
-        if not os.path.isfile(os.path.join(target_dir, file_name)):
-            run_cmd(["mv %s %s" % (source_file, target_dir)])
+        # 将比较结果记录到mismatch文件中
+        result_di = check_result(file_a + '.clean.txt', file_b, mismatch_file)
+        with open(mismatch_file, 'a') as f_mismatch_file:
+            for k, v in result_di.items():
+                f_mismatch_file.write("\n%s: %s" % (k, v))
 
-    remove_tmp_file()
-    LOGGER.info("end...")
+        # 移动生成的清洗文件，mismatch文件，日志文件到/etl/dwexp/crm/log/compare, 如果文件已存在就不覆盖
+        for source_file in [mismatch_file, log_file, file_a + '.clean.txt']:
+            file_name = os.path.split(source_file)[-1]
+            target_dir = os.path.join(BASE_PATH, "compare")
+            if not os.path.isfile(os.path.join(target_dir, file_name)):
+                run_cmd(["mv %s %s" % (source_file, target_dir)])
+
+        remove_tmp_file()
+        LOGGER.info("end...")
+    except Exception as err:
+        LOGGER.error(str(err))
+        record_summar_log(begin_date, file_a, '-', '-', file_b, '-', '-', 'ERROR', '-', '-', str(err)[:200].replace('\n', ''))
 
 
 if __name__ == "__main__":

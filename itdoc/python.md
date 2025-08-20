@@ -1,3 +1,9 @@
+pip安装包很慢，设置全局镜像源
+
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+
+
+
 ## 字符串编码
 
 字符：
@@ -75,7 +81,7 @@ af_print()
 
 将将项目的根路径添加到sys.path,其他都是用此路径然后使用绝对路径导包就可以了
 
-为了包内模块可以单独使用（包内导包使用绝对路径），我们可以将入口程序中所在的目录添加到其sys.path中
+为了包内模块可以单独使用（包内导包使用绝对路径），我们可以将入口程序中所在的目录添加到其sy s.path中
 
 ```python
 # 被入口程序调用的包如果想要单独执行
