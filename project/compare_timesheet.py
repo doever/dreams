@@ -56,15 +56,15 @@ def merge_dicts(dicts):
 if __name__ == '__main__':
     # 统计的年份周期
     year = 2025
-    months = [4, 5, 6]
+    months = [9, 10, 11]
 
-    di_1 = read_xls_to_dict(r"C:/Users/syrg_/Desktop/翕振智慧金融事业部考勤表4月.xls")
-    di_2 = read_xls_to_dict(r"C:/Users/syrg_/Desktop/翕振智慧金融事业部考勤表5月.xls")
-    di_3 = read_xls_to_dict(r"C:/Users/syrg_/Desktop/翕振智慧金融事业部考勤表6月.xls")
-    di_4 = read_xls_to_dict(r"C:/Users/syrg_/Desktop/翕振智慧金融事业部考勤表7月.xls")
-    xy_di_1 = read_xlsx_to_dict(r"C:/Users/syrg_/Desktop/工作量付款确认表-202504.xlsx")
-    xy_di_2 = read_xlsx_to_dict(r"C:/Users/syrg_/Desktop/工作量付款确认表-202505.xlsx")
-    xy_di_3 = read_xlsx_to_dict(r"C:/Users/syrg_/Desktop/工作量付款确认表-202506.xlsx")
+    di_1 = read_xls_to_dict(r"C:/Users/syrg_/Desktop/翕振智慧金融事业部考勤表9月.xls")
+    di_2 = read_xls_to_dict(r"C:/Users/syrg_/Desktop/翕振智慧金融事业部考勤表10月.xls")
+    di_3 = read_xls_to_dict(r"C:/Users/syrg_/Desktop/翕振智慧金融事业部考勤表11月.xls")
+    di_4 = read_xls_to_dict(r"C:/Users/syrg_/Desktop/翕振智慧金融事业部考勤表12月.xls")
+    xy_di_1 = read_xlsx_to_dict(r"C:/Users/syrg_/Desktop/工作量付款确认表-202509.xlsx")
+    xy_di_2 = read_xlsx_to_dict(r"C:/Users/syrg_/Desktop/工作量付款确认表-202510.xlsx")
+    xy_di_3 = read_xlsx_to_dict(r"C:/Users/syrg_/Desktop/工作量付款确认表-202511.xlsx")
 
     # ______________________________统计高伟达工时____________________________________________
     dicts = [di_1, di_2, di_3, di_4]
